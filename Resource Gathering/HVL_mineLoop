@@ -1,0 +1,1879 @@
+#standard imports
+import sys
+from System.Collections.Generic import List
+#global types
+#generic
+self = Player.Serial
+self_pack = Player.Backpack.Serial
+##Counts
+oreCount = 0
+
+##
+ore = Items.FindByID(0x19B9,-1,self_pack,True,True)
+
+##types lists
+forgesList = List[int]((0x197A, 0x197E, 0x19A2, 0x1982, 0x1992, 0x1996, 0x0FB1, 0x199A, 0x0FB1))
+tinkerTools = [0x1EB8, 0x1EBC]
+minerTools = [0x0F39, 0x0E86,0x0E85]
+## msg stubs
+smeltSuccess = 'You smelt the ore removing the impurities and put the metal in your backpack.'
+smeltFail = 'You burn away the impurities but are left with less useable metal.'
+pickaxe = Items.FindByID(0x0E86,0x0000, -1 ) #can I put minerTools here to search all of these?
+
+def worldSave():
+    if (Journal.SearchByType('The world will save in 1 minute.', 'System') or Journal.SearchByType('pause', 'Regular')):
+        Misc.Pause(700)
+        Misc.SendMessage('Pausing for world save or player-called break.', 33)
+        while (not Journal.SearchByType('World save complete.', 'System') and not Journal.SearchByType('play', 'Regular')):
+            Misc.Pause(1000)
+        Misc.Pause(2500)
+        Misc.SendMessage('Continuing run', 33)
+        Misc.Pause(700)
+    Journal.Clear()
+
+
+def toolCheck():
+    axecount = Items.ContainerCount(Player.Backpack.Serial,0x0E86,-1)
+    axecount = int(axecount)
+    prospcount = Items.ContainerCount(Player.Backpack.Serial,0x0FB4,-1)
+    prospcount = int(prospcount)
+    if axecount < 3:
+        Items.UseItem(0x40826F73)
+        Misc.Pause(500)
+        for x in range (3-axecount):
+            Items.Move(Items.FindByID(0x0E86,0x0000,0x40826F73),Player.Backpack.Serial,3-axecount)
+            Misc.Pause(1000)
+    if prospcount < 3:
+        Items.UseItem(0x40826F73)
+        Misc.Pause(500)
+        for x in range (3-prospcount):
+            Items.Move(Items.FindByID(0x0FB4,0x0000,0x40826F73),Player.Backpack.Serial,3-prospcount)
+            Misc.Pause(1000)
+        
+        
+while True:
+    Journal.Clear()
+    toolCheck()
+    worldSave()
+    Misc.Pause(200)
+      #IRON VEIN 1
+    Player.ChatSay(64,'Lets find us some color.')
+    Misc.Pause(500)
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)
+    Player.PathFindTo(2124, 330, 0)#Go to first mining location
+    Misc.Pause(4000)#Adjust for travel time
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2125,331,4)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2125,331,4)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+
+       except: 
+           Misc.Pause(500)
+
+       #IRON VEIN 2
+    Player.PathFindTo(2125, 310, 0)#Go to first mining location
+    Misc.Pause(5000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2123,310,14)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2123,310,14)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+       #IRON VEIN 3
+    Player.PathFindTo(2136, 314, 0)#Go to first mining location
+    Misc.Pause(2300)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2136,312,0)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2136,312,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       
+       except: 
+           Misc.Pause(500)
+       
+       #IRON VEIN 4
+    Player.PathFindTo(2147, 317, 0)#Go to first mining location
+    Misc.Pause(2700)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2147,316,0)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2147,316,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+       #IRON VEIN 5
+    Player.PathFindTo(2147, 310, 0)#Go to first mining location
+    Misc.Pause(1300)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2149,310,6)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2149,310,6)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500) 
+
+       #IRON VEIN 6
+    Player.PathFindTo(2152, 307, 0)#Go to first mining location
+    Misc.Pause(1000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2153,307,1)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2153,307,1)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+    #   #IRON VEIN 7
+    #Player.PathFindTo(2164, 316, 0)#Go to first mining location
+    #Misc.Pause(4500)#Adjust for travel time
+    #Journal.Clear()
+
+    #while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+    #   not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+    #   not Journal.SearchByName( 'You cant mine there.', 'System' ) ):
+    #   for x in range (1):
+           #worldSave()
+    #       Misc.Pause(200)
+    #       Misc.Pause(200)
+    #       Items.UseItem( Items.FindByID( 0x0E86,0x0000, -1 ) )
+    #       Target.WaitForTarget( 1000, True )
+    #       Target.TargetExecute(2164,317,0)
+    #       Misc.Pause(1000)
+    #   try:
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)
+    #   except: Misc.Pause(500)
+     ####RUN HOME  
+        #3
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)
+    Player.PathFindTo(2149,327,0)
+    Misc.Pause(3000)
+        #4
+    Player.PathFindTo(2142,347,0)
+    Misc.Pause(3000)
+        #5
+    Player.PathFindTo(2124,360,0)
+    Misc.Pause(4500)
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Misc.Pause(2000)
+    try:
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(500)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(500)
+    except:
+        Misc.Pause(500)
+    Player.PathFindTo(2117, 359, 7)
+    Misc.Pause(3500)
+    Player.PathFindTo(2120, 355, 7)
+    Misc.Pause(1000)
+    Items.UseItem(0x40CFB51E)
+    Misc.Pause(500)
+    Player.PathFindTo(2127, 355, 7)
+    Misc.Pause(2000)
+    Items.UseItem(0x40826F73)
+    Misc.Pause(500)
+    try:
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1000)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1000)
+        Player.ChatSay(65,'Total Iron Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x0000,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(1000)
+        
+    toolCheck()   
+        
+        #DULL COPPER VEIN
+    Misc.Pause(500)
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)
+    Player.PathFindTo(2091, 346, 0)#Go to first mining location
+    Misc.Pause(8000)#Adjust for travel time
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2090,346,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+           
+        
+       #DULL COPPER VEIN 2
+    Player.PathFindTo(2082, 356, 0)#Go to first mining location
+    Misc.Pause(3500)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2081,356,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+       #DULL COPPER VEIN 3
+    Player.PathFindTo(2073, 368, 0)#Go to first mining location
+    Misc.Pause(4000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2072,368,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+           
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)
+    Player.PathFindTo(2096, 353, 0)
+    Misc.Pause(3800)   
+
+       #DULL COPPER VEIN 4
+    Player.PathFindTo(2116, 333, 0)#Go to first mining location
+    Misc.Pause(3500)#Adjust for travel time
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2117,332,8)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+       #DULL COPPER VEIN 5
+    Player.PathFindTo(2125, 325, 0)#Go to first mining location
+    Misc.Pause(3000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2124,323,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+           
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)    
+    Player.PathFindTo(2146, 320, 0)
+    Misc.Pause(3000)
+    Player.PathFindTo(2164, 314, 0)
+    Misc.Pause(2100)
+    Player.PathFindTo(2185, 312, 0)
+    Misc.Pause(3800)
+
+        #DULL COPPER VEIN 6
+    Player.PathFindTo(2197, 301,0)#Go to first mining location
+    Misc.Pause(3000)#Adjust for travel time
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2198,300,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+    #    #DULL COPPER VEIN 7
+    #Player.PathFindTo(2205, 292,0)#Go to first mining location
+    #Misc.Pause(4000)#Adjust for travel time
+    #Journal.Clear()
+
+    #while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+    #   not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+    #   not Journal.SearchByName( 'You cant mine there.', 'System' ) ):
+    #   for x in range (1):
+    #       worldSave()
+    #       Misc.Pause(200)
+    #       Items.UseItem( Items.FindByID( 0x0E86,0x0000, -1 ) )
+    #       Target.WaitForTarget( 1000, True )
+    #       Target.TargetExecute(2205,291,0)
+    #       Misc.Pause(1000)
+    #   try:
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)
+    #   except: Misc.Pause(500)
+
+     ####RUN HOME  
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)     
+    Player.PathFindTo(2183,308,0)
+    Misc.Pause(2700)
+    Player.PathFindTo(2149,327,0)
+    Misc.Pause(5700)
+    Player.PathFindTo(2142,347,0)
+    Misc.Pause(3000)
+    Player.PathFindTo(2124,360,0)
+    Misc.Pause(3500)
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Misc.Pause(500)
+    try:
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(500)
+    Player.PathFindTo(2117, 359, 7)
+    Misc.Pause(3500)
+    Player.PathFindTo(2120, 355, 7)
+    Misc.Pause(1000)
+    Items.UseItem(0x40CFB51E)
+    Misc.Pause(500)
+    Player.PathFindTo(2127, 355, 7)
+    Misc.Pause(2000)
+    Items.UseItem(0x40826F73)
+    Misc.Pause(1500)
+    try:
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)
+        Player.ChatSay(65,'Total Dull Copper Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x0415,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(500)
+
+    toolCheck()   
+    
+        #COPPER VEIN 1
+    Misc.Pause(500)
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)
+    Player.PathFindTo(2095, 343, 0)#Go to first mining location
+    Misc.Pause(8000)#Adjust for travel time
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2095,342,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)  
+
+        #COPPER VEIN 2   
+    Player.PathFindTo(2122, 329, 0)#Go to first mining location
+    Misc.Pause(6300)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2121,329,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+        #COPPER VEIN 3   
+    Player.PathFindTo(2125, 319, 0)#Go to first mining location
+    Misc.Pause(2200)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2124,319,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+    Player.PathFindTo(2146,319,0)
+    Misc.Pause(4600)
+       
+        #COPPER VEIN 4  
+    Player.PathFindTo(2168, 316, 0)#Go to first mining location
+    Misc.Pause(4700)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2169,316,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+        #COPPER VEIN 5  
+    Player.PathFindTo(2189, 304, 0)#Go to first mining location
+    Misc.Pause(5100)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2189,303,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+    #    #COPPER VEIN 6  
+    #Player.PathFindTo(2199, 290, 0)#Go to first mining location
+    #Misc.Pause(3500)#Adjust for travel time
+    #Journal.Clear()
+
+    #while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+    #   not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+    #   not Journal.SearchByName( 'You cant mine there.', 'System' ) ):
+    #   for x in range (1):
+    #       worldSave()
+    #       Misc.Pause(200)
+    #       Items.UseItem( Items.FindByID( 0x0E86,0x0000, -1 ) )
+    #       Target.WaitForTarget( 1000, True )
+    #       Target.TargetExecute(2198,288,0)
+    #       Misc.Pause(1000)
+    #   try:
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)
+    #   except: Misc.Pause(500)
+
+    #    #COPPER VEIN 7  
+    #Player.PathFindTo(2116, 296, 0)#Go to first mining location
+    #Misc.Pause(5000)#Adjust for travel time
+    #Journal.Clear()
+
+    #while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+    #   not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+    #   not Journal.SearchByName( 'You cant mine there.', 'System' ) ):
+    #   for x in range (1):
+    #       worldSave()
+    #       Misc.Pause(200)
+    #       Items.UseItem( Items.FindByID( 0x0E86,0x0000, -1 ) )
+    #       Target.WaitForTarget( 1000, True )
+    #       Target.TargetExecute(2115,296,0)
+    #       Misc.Pause(1000)
+    #   try:
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)
+    #   except: Misc.Pause(500)
+    
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)  
+    Player.PathFindTo(2162, 321, 0)
+    Misc.Pause(5100)   
+    Player.PathFindTo(2142, 346, 0)
+    Misc.Pause(4000)
+        ##GO HOME SEQUENCE
+    Player.PathFindTo(2124,360,0)
+    Misc.Pause(4000)
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Misc.Pause(500)
+    try:
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(500)
+    Player.PathFindTo(2117, 359, 7)
+    Misc.Pause(3500)
+    Player.PathFindTo(2120, 355, 7)
+    Misc.Pause(1000)
+    Items.UseItem(0x40CFB51E)
+    Misc.Pause(500)
+    Player.PathFindTo(2127, 355, 7)
+    Misc.Pause(2000)
+    Items.UseItem(0x40826F73)
+    Misc.Pause(1500)
+    try:
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1000)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1000)
+        Player.ChatSay(65,'Total Copper Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x045f,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(500)
+
+    toolCheck()   
+
+        #SHADOW VEIN 
+    Misc.Pause(500)
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)
+    Player.PathFindTo(2108, 337, 0)#Go to first mining location
+    Misc.Pause(6000)#Adjust for travel time
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2106,337,7)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+        #SHADOW VEIN 2
+    Player.PathFindTo(2124, 317, 0)#Go to first mining location
+    Misc.Pause(7200)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2123,315,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+        #SHADOW VEIN 3
+    Player.PathFindTo(2149, 302, 0)#Go to first mining location
+    Misc.Pause(6100)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2151,302,4)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+       #SHADOW VEIN 4
+    Player.PathFindTo(2154, 310, 0)#Go to first mining location
+    Misc.Pause(2000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2154,311,6)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+    Player.PathFindTo(2182, 305, 0)
+    Misc.Pause(6500)
+       
+    #SHADOW VEIN 5 NOT A SHADOW VEIN!!! IRON ONLY
+    Player.PathFindTo(2207, 286, 0)#Go to first mining location
+    Misc.Pause(8000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2207,285,4)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+           
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)  
+    Player.PathFindTo(2194, 300, 0)
+    Misc.Pause(2000)  
+    Player.PathFindTo(2183, 321, 0)
+    Misc.Pause(3000)  
+    Player.PathFindTo(2162, 321, 0)
+    Misc.Pause(3500)  
+    Player.PathFindTo(2142, 328, 0)
+    Misc.Pause(3000) 
+
+       
+    #   #SHADOW VEIN 6
+    #Player.PathFindTo(2118, 288, 0)#Go to first mining location
+    #Misc.Pause(9000)#Adjust for travel time
+    #Journal.Clear()
+
+    #while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+    #   not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+    #   not Journal.SearchByName( 'You cant mine there.', 'System' ) ):
+    #   for x in range (1):
+    #       worldSave()
+    #       Misc.Pause(200)
+    #       Items.UseItem( Items.FindByID( 0x0E86,0x0000, -1 ) )
+    #       Target.WaitForTarget( 1000, True )
+    #       Target.TargetExecute(2117,288,-1)
+    #       Misc.Pause(1000)
+    #   try:
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)   
+    #   except: 
+    #       Misc.Pause(500)
+    #       
+    #Player.PathFindTo(2130, 314, 0)
+    #Misc.Pause(6500)
+    #Player.PathFindTo(2130, 333, 0)
+    #Misc.Pause(5000)
+
+        #SHADOW VEIN 7
+    Player.PathFindTo(2126, 337, 0)#Go to first mining location
+    Misc.Pause(4500)#Adjust for travel time
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2125, 337 ,0 ,6011)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+   
+       except: 
+           Misc.Pause(500)
+           
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)  
+    Player.PathFindTo(2130, 350, 0)
+    Misc.Pause(1200) 
+
+        ##GO HOME SEQUENCE
+    Player.PathFindTo(2124,360,0)
+    Misc.Pause(4000)
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Misc.Pause(1000)
+    try:
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(500)
+        
+    Player.PathFindTo(2117, 359, 7)
+    Misc.Pause(3500)
+    Player.PathFindTo(2120, 355, 7)
+    Misc.Pause(1000)
+    Items.UseItem(0x40CFB51E)
+    Misc.Pause(500)
+    Player.PathFindTo(2127, 355, 7)
+    Misc.Pause(2000)
+    Items.UseItem(0x40826F73)
+    Misc.Pause(1500)
+    try:
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1000)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1000)
+        Player.ChatSay(65,'Total Shadow Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x0455,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(500)
+
+    toolCheck()   
+
+        #BRONZE VEIN
+    Misc.Pause(500)
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)
+    Player.PathFindTo(2157, 321, 0)#Go to first mining location
+    Misc.Pause(6000)#Adjust for travel time
+    Player.PathFindTo(2157, 321, 0)#Go to first mining location
+    Misc.Pause(500)
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2156, 320 ,0 ,6012)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2156, 320 ,0 ,6012)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+   
+       except: 
+           Misc.Pause(500)
+
+        #BRONZE VEIN 2
+    Player.PathFindTo(2153, 299, 0)#Go to first mining location
+    Misc.Pause(4500)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2152, 299 ,0 ,6008)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+   
+       except: 
+           Misc.Pause(500)
+           
+        #BRONZE VEIN 3
+    Player.PathFindTo(2146, 308, 0)#Go to first mining location
+    Misc.Pause(3000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2144, 308 ,0 ,6012)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2144, 308 ,0 ,6012)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+   
+       except: 
+           Misc.Pause(500)
+           
+    Player.PathFindTo(2124, 330, 0)
+    Misc.Pause(6000) 
+
+        #BRONZE VEIN 4
+    Player.PathFindTo(2089, 349, 0)#Go to first mining location
+    Misc.Pause(9000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2088, 349 ,0)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2088, 349 ,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+   
+       except: 
+           Misc.Pause(500)
+
+           #BRONZE VEIN 5
+    Player.PathFindTo(2082, 361, 0)#Go to first mining location
+    Misc.Pause(3500)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2081, 362 ,0 ,6008)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+   
+       except: 
+           Misc.Pause(500)     
+
+        #BRONZE VEIN 6
+    Player.PathFindTo(2074, 372, 0)#Go to first mining location
+    Misc.Pause(3500)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2073, 373 ,0 ,6012)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+   
+       except: 
+           Misc.Pause(500)
+
+    #    #BRONZE VEIN 7
+    #Player.PathFindTo(2086, 430, 0)#Go to first mining location
+    #Misc.Pause(8000)#Adjust for travel time
+    #Journal.Clear()
+
+    #while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+    #   not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+    #   not Journal.SearchByName( 'You cant mine there.', 'System' ) ):
+    #   for x in range (1):
+    #       worldSave()
+    #       Misc.Pause(200)
+    #       Items.UseItem( Items.FindByID( 0x0E86,0x0000, -1 ) )
+    #       Target.WaitForTarget( 1000, True )
+    #       Target.TargetExecute(2086, 431 ,0 ,6004)
+    #       Misc.Pause(1000)
+    #   try:
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)
+    #       Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+    #       Misc.Pause(750)   
+    #   except: 
+    #       Misc.Pause(500)
+    #       
+    #Player.PathFindTo(2109, 399, 0)
+    #Misc.Pause(8000)  
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)    
+    Player.PathFindTo(2099,372,0)
+    Misc.Pause(3500)
+        ##GO HOME SEQUENCE
+    Player.PathFindTo(2124,360,0)
+    Misc.Pause(4000)
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Misc.Pause(1000)
+    try:
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(500)
+    Player.PathFindTo(2117, 359, 7)
+    Misc.Pause(3500)
+    Player.PathFindTo(2120, 355, 7)
+    Misc.Pause(1000)
+    Items.UseItem(0x40CFB51E)
+    Misc.Pause(500)
+    Player.PathFindTo(2127, 355, 7)
+    Misc.Pause(2000)
+    Items.UseItem(0x40826F73)
+    Misc.Pause(2000)
+    try:
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1000)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1000)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1000)
+        Player.ChatSay(65,'Total Bronze Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x06d8,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(500)
+
+    toolCheck()   
+    Items.Move(Items.FindByID(0x09F1,-1,0x40826F73),0x0018A481,1) #feeding beetle
+    Misc.Pause(1000)
+    Player.ChatSay(64,'Eat up, idiot.')
+    Misc.Pause(1000)
+
+       #AGAPITE VEIN 1
+    Misc.Pause(500)
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)
+    Player.PathFindTo(2129, 337, 0)#Go to first mining location
+    Misc.Pause(3000)#Adjust for travel time
+    Player.PathFindTo(2124, 316, 0)#Go to first mining location
+    Misc.Pause(3000)
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2122,316,6)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+       #GOLD VEIN 1
+    Player.PathFindTo(2126, 283, -1)#Go to first mining location
+    Misc.Pause(7000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2127,283,5)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+           #VERITE VEIN 1 (Now Valorite)
+    Player.PathFindTo(2163, 316, 0)#Go to first mining location
+    Misc.Pause(10000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2163,316,0)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2163,316,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+       #GOLD VEIN 2
+    Player.PathFindTo(2174, 314, 0)#Go to first mining location
+    Misc.Pause(3000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2174,313,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+       #AGAPITE VEIN 2
+    Player.PathFindTo(2201, 301, 0)#Go to first mining location
+    Misc.Pause(5500)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2201, 301, 0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+       #VERITE VEIN 2
+    Player.PathFindTo(2208, 282, 0)#Go to first mining location
+    Misc.Pause(4000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2207, 283, 0)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2207, 283, 0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+        #GO HOME SEQUENCE
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)    
+    Player.PathFindTo(2174,315,0)
+    Misc.Pause(7500)
+    Player.PathFindTo(2145,335,0)
+    Misc.Pause(4500)
+    Player.PathFindTo(2124,360,0)
+    Misc.Pause(7000)
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Misc.Pause(500)
+    try:
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(500)
+    Player.PathFindTo(2117, 359, 7)
+    Misc.Pause(3500)
+    Player.PathFindTo(2120, 355, 7)
+    Misc.Pause(1000)
+    Items.UseItem(0x40CFB51E)
+    Misc.Pause(500)
+    Player.PathFindTo(2127, 355, 7)
+    Misc.Pause(2000)
+    Items.UseItem(0x40826F73)
+    Misc.Pause(1500)
+    try:
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)
+        Player.ChatSay(65,'Gold Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x06b7,True))
+        Misc.Pause(1500)
+        Player.ChatSay(65,'Agapite Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x097e,True))
+        Misc.Pause(1500)
+        Player.ChatSay(65,'Valorite Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x0544,True))
+        Misc.Pause(1500)
+    except:
+        Misc.Pause(500)
+
+    toolCheck()   
+    
+    #AGAPITE VEIN 1
+    Misc.Pause(500)
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)
+    Player.PathFindTo(2101, 377, 0)#Go to first mining location
+    Misc.Pause(6000)#Adjust for travel time
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2101, 378 ,0 ,6008)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+       #VERITE VEIN 1
+    Player.PathFindTo(2069, 380, 0)#Go to first mining location
+    Misc.Pause(6800)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2068, 380 ,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+       #AGAPITE VEIN 2
+    Player.PathFindTo(2084, 399, 0)#Go to first mining location
+    Misc.Pause(5000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2084, 400 ,0 ,6011)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+     
+       #AGAPITE VEIN 3  
+    Player.PathFindTo(2087, 400, 0)#Go to first mining location
+    Misc.Pause(1000)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2088, 400 ,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+       #AGAPITE VEIN 4
+    Player.PathFindTo(2077, 412, 0)#Go to first mining location
+    Misc.Pause(3500)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2077, 412 ,0 ,6012)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+       #AGAPITE VEIN 4
+    Player.PathFindTo(2090, 424, 0)#Go to first mining location
+    Misc.Pause(3500)#Adjust for travel time
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2089, 426 ,0 ,6004)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+           
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)    
+    Player.PathFindTo(2112, 396, 0)
+    Misc.Pause(4500)
+    Player.PathFindTo(2117, 372, 0)
+    Misc.Pause(3500)
+    Player.PathFindTo(2124,360,0)
+    Misc.Pause(2000)
+    Mobiles.UseMobile(Player.Serial) #dismount
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Misc.Pause(500)
+    try:
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(500)
+    Player.PathFindTo(2117, 359, 7)
+    Misc.Pause(3500)
+    Player.PathFindTo(2120, 355, 7)
+    Misc.Pause(1000)
+    Items.UseItem(0x40CFB51E)
+    Misc.Pause(500)
+    Player.PathFindTo(2127, 355, 7)
+    Misc.Pause(2000)
+    Items.UseItem(0x40826F73)
+    Misc.Pause(1500)
+    try:
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)    
+        Player.ChatSay(65,'Agapite Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x097e,True))
+        Misc.Pause(1500)
+        Player.ChatSay(65,'Verite Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x07d2,True))
+        Misc.Pause(1500)
+    except:
+        Misc.Pause(500)
+
+    toolCheck()   
+
+    #DULL 1
+    Misc.Pause(500)
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)
+    Player.PathFindTo(2111,376,0)
+    Misc.Pause(3300)
+    Player.PathFindTo(2081,385,0)
+    Misc.Pause(4000)
+    Player.PathFindTo(2064,398,0)
+    Misc.Pause(4000)
+    Mobiles.UseMobile(Player.Serial)
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2063, 400 ,0 ,6012)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2063, 400 ,0 ,6012)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+           #Dull 2
+    Player.PathFindTo(2050,389,0)
+    Misc.Pause(4500)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2050, 388 ,0 ,6003)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2050, 388 ,0 ,6003)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+           #Dull 3
+    Player.PathFindTo(2044,383,0)
+    Misc.Pause(4000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2044, 382 ,7)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2044, 382 ,7)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+     
+           #Dull 4
+    Player.PathFindTo(2041,375,0)
+    Misc.Pause(3000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2041, 373 ,7)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+           #Dull 5
+    Player.PathFindTo(2037,366,0)
+    Misc.Pause(3500)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2037, 365 ,0)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+       
+           #Dull 6
+    Player.PathFindTo(2018,335,0)
+    Misc.Pause(9000)
+    Misc.WaitForContext(0x0018A481, 10000) #open beetle pack
+    Misc.ContextReply(0x0018A481, 10)
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(2018, 333 ,0 ,6004)
+    Misc.Pause(500)
+    worldSave()
+    Journal.Clear()
+    while ( not Journal.SearchByName( 'There is no metal here to mine.', 'System' ) and
+       not Journal.SearchByName( 'Target cannot be seen.', 'System' ) and
+       not Journal.SearchByName( 'You cant mine there.', 'System' ) and Items.ContainerCount(0x4020D61E,0x19B9,-1,)<130):
+       for x in range (1):
+           worldSave()
+           Misc.Pause(200)
+           Items.UseItemByID(0x0E86,-1)
+           Target.WaitForTarget( 1000, True )
+           Target.TargetExecute(2018, 333 ,0 ,6004)
+           Misc.Pause(500)
+       try:
+           Items.Move(Items.FindByID(0x19B9,-1,self_pack,True,True),0x0018A481,-1)
+           Misc.Pause(350)
+       except: 
+           Misc.Pause(500)
+
+    Mobiles.UseMobile(0x0018A481)
+    Misc.Pause(1000)
+    Player.PathFindTo(2031,360,0)
+    Misc.Pause(4000)
+    Player.PathFindTo(2037,371,0)
+    Misc.Pause(2000)
+    Player.PathFindTo(2071,394,0)
+    Misc.Pause(6000)
+    Player.PathFindTo(2101,376,0)
+    Misc.Pause(5500)
+    Player.PathFindTo(2124,360,0)
+    Misc.Pause(3700)
+    Mobiles.UseMobile(Player.Serial)
+    Misc.Pause(1000)
+    Misc.WaitForContext(0x0018A481, 10000)
+    Misc.ContextReply(0x0018A481, 10)
+    Misc.Pause(500)
+    try:
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+        Items.UseItem(Items.FindByID(0x19B9,-1,0x4020D61E,True,True))
+        Misc.Pause(1000)
+    except:
+        Misc.Pause(500)
+    Player.PathFindTo(2117, 359, 7)
+    Misc.Pause(3500)
+    Player.PathFindTo(2120, 355, 7)
+    Misc.Pause(1000)
+    Items.UseItem(0x40CFB51E)
+    Misc.Pause(500)
+    Player.PathFindTo(2127, 355, 7)
+    Misc.Pause(2000)
+    Items.UseItem(0x40826F73)
+    Misc.Pause(1500)
+    try:
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)
+        Items.Move(Items.FindByID(0x1BF2,-1,0x404857C9),0x40826F73,-1)
+        Misc.Pause(1500)    
+        Player.ChatSay(65,'Dull Copper Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x0415,True))
+        Misc.Pause(1500)
+        Player.ChatSay(65,'Shadow Inventory:')
+        Misc.Pause(500)
+        Player.ChatSay(65,Items.ContainerCount(0x40826F73,0x1BF2,0x0455,True))
+        Misc.Pause(1500)
+    except:
+        Misc.Pause(500)
+
+    toolCheck()  
+    Misc.Pause(1000)
