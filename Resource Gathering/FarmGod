@@ -1,0 +1,591 @@
+
+from System import Int32 as int
+from System import Byte
+from System.Collections.Generic import List
+import time
+
+corpse_ID = 0x2006
+hide_ID = 0x1081
+gold_ID = 0x0EED
+feathers_ID = 0x1BD1
+wood_ID = 0x1BDD
+arrow_ID = 0x0F3F
+wool_ID = 0x0DF8
+pile_ID = 0x1079
+meat_ID = 0x09F1
+cloth_ID = 0x1767
+chickenStatue_ID = 0x20D1
+lizardStatue_ID = 0x20DE
+
+loot_list  = [hide_ID, gold_ID,feathers_ID, wood_ID, arrow_ID, wool_ID, pile_ID, meat_ID,cloth_ID,chickenStatue_ID,lizardStatue_ID]
+
+def manaCheck():
+    if Journal.SearchByType("Insufficient mana for this spell.","System"):
+        Misc.Pause(8000)
+        killGame()
+        Misc.Pause(8000)
+        Journal.Clear()
+    
+def findCorpses():
+    corpses_filter = Items.Filter()
+    corpses_filter.IsCorpse = True # optional
+    corpses_filter.OnGround = True # Questionably optional
+    corpses_filter.RangeMin = 0 # optional
+    corpses_filter.RangeMax = 2 # optoinal
+    corpses_filter.Graphics = List[int]([0x2006,0x2006]) # kraken, deep water
+    corpses_filter.CheckIgnoreObject = True # optioinal, if you use Misc.IgnoreObject(item) the fitler will ignore if true.
+
+    corpse_list = Items.ApplyFilter(corpses_filter) # returns list of items, manipulate list after this as you wish
+
+    return corpse_list
+
+def lootCorpse(corpse):
+    for item_to_loot in corpse.Contains:
+        Misc.SendMessage("found a {} with ID {}".format(item_to_loot.Name, item_to_loot.ItemID),130)
+        Misc.Pause(10)
+        shouldLoot = False
+        if checkItemByID(item_to_loot, loot_list):
+            shouldLoot = True
+                
+        if shouldLoot:
+            Items.Move(item_to_loot,Player.Backpack,-1 ) # -1 -> all, for stackable items
+            Misc.Pause(750)
+        
+            
+def checkItemByID(item_to_check, valid_ids):
+    if item_to_check.ItemID in loot_list:
+        return True
+    return False
+
+def lootGame(): # define the function
+    
+    crps_list = findCorpses()
+
+    for current_corpse in crps_list:
+        Items.UseItem(current_corpse)
+        Misc.Pause(500)
+        if Items.FindByID(0x0EC4,0x0494,Player.Backpack.Serial):
+            Items.UseItemByID(0x0EC4,-1)
+        else:
+            Items.UseItemByID(0x0F52,-1)
+        Misc.Pause(500)
+        Target.TargetExecute(current_corpse)
+        Misc.Pause(500)
+        lootCorpse(current_corpse)
+        Misc.Pause(500)
+        pile = Items.FindByID(0x1079,-1,Player.Backpack.Serial)
+        if pile:
+            Items.UseItemByID(0x0F9F,-1)
+            Misc.Pause(500)
+            Target.TargetExecute(pile)
+            Misc.Pause(500)
+        Misc.IgnoreObject(current_corpse)
+        if Player.Weight > 340:
+            break
+    
+def healthCheck():
+    if Player.Hits < 35:
+        Player.HeadMessage(64,"This is getting a little hairy...  "+str(Player.Hits)+" health.")
+        Misc.Pause(500)
+        goHome()
+        Misc.ScriptStop("FarmGod.py")
+    else:
+        Player.HeadMessage(64,"Health  "+str(Player.Hits)+" ...doing okay")
+        Misc.Pause(1500)
+        
+
+def attempt_recall(location):
+    while True:
+        Player.ChatSay(f"[recall {location}")
+        Misc.Pause(2500)  # Wait for the spell to cast
+
+        # Check if the spell was disturbed
+        if Journal.SearchByType("Your concentration is disturbed, thus ruining thy spell.", "System"):
+            Misc.SendMessage("Spell was disturbed. Recasting...")
+            Journal.Clear()
+            continue  # Skip the rest of the loop and start over
+        elif Journal.SearchByType("Insufficient mana for this spell.","System"):
+            Misc.Pause(8000)
+            killGame()
+            Misc.Pause(8000)
+            Journal.Clear()
+            continue
+        else:
+            break  # Exit the loop if no disturbance is detected
+
+def worldSave():
+    if (Journal.SearchByType('The world will save in 1 minute.', 'System') or Journal.SearchByType('pause', 'Regular')):
+        Misc.Pause(700)
+        Misc.SendMessage('Pausing for world save or player-called break.', 33)
+        while (not Journal.SearchByType('World save complete.', 'System') and not Journal.SearchByType('play', 'Regular')):
+            Misc.Pause(1000)
+        Misc.Pause(2500)
+        Misc.SendMessage('Continuing run', 33)
+        Misc.Pause(700)
+    Journal.Clear()  
+
+def stockRegs():
+    root = Items.BackpackCount(0x0F7A,-1)
+    moss = Items.BackpackCount(0x0F7B,-1)
+    pearl = Items.BackpackCount(0x0F86,-1)
+  
+    
+    if root < 15:
+        Items.Move(Items.FindByID(0x0F7A,-1,0x42E88440),Player.Backpack.Serial,15-root)
+        Misc.Pause(1000)
+    
+    if moss < 15:
+        Items.Move(Items.FindByID(0x0F7B,-1,0x42E88440),Player.Backpack.Serial,15-moss)
+        Misc.Pause(1000)
+        
+    if pearl < 15:
+        Items.Move(Items.FindByID(0x0F86,-1,0x42E88440),Player.Backpack.Serial,15-pearl)
+        Misc.Pause(1000)
+        
+    else:
+        Player.HeadMessage(64,"Regs look good")
+        Misc.Pause(500)
+    
+    
+def deadCheck():
+    if Player.IsGhost:
+        Misc.ScriptStopAll(False)
+    
+def spinBolts():   
+    rawmats = [0x0DF9, 0x1A9C, 0x1A9D, 0x0DF8]
+
+    for item_id in rawmats:
+        for item in Player.Backpack.Contains:
+            if item.ItemID == item_id:
+                while item.Amount > 0:  # Continue processing the stack until depleted
+                    worldSave()
+                    Items.UseItem(item)
+                    Misc.Pause(500)
+                    Target.TargetExecute(0x42E7B2C6)
+                    Misc.Pause(4000)
+                    updated_item = Items.FindByID(item_id,-1,Player.Backpack.Serial)  # Update the item reference to get the current state
+                    if updated_item is not None:
+                        item = updated_item
+                    else:
+                        break
+
+    for item in Player.Backpack.Contains:
+        if item.ItemID == 0x0FA0 or item.ItemID == 0x0E1D:
+            while item.Amount > 0:
+                worldSave()
+                Items.UseItem(item)
+                Misc.Pause(500)
+                Target.TargetExecute(0x42E7A998)
+                Misc.Pause(500)
+                updated_item = Items.FindByID(item.ItemID,-1,Player.Backpack.Serial)
+                if updated_item is not None:
+                    item = updated_item
+                else:
+                    break
+def goHome():
+    attempt_recall("Winter Lodge")
+    while True:
+        kindling = Items.FindByID(0x0DE1, -1, Player.Backpack.Serial)
+        if kindling:
+            Items.UseItem(kindling)
+            Misc.Pause(500)
+        else:
+            break  # Exit the loop if no kindling is found
+    Player.PathFindTo(6802, 3901, 12)
+    Misc.Pause(1500)
+    Player.PathFindTo(6803, 3897, 17)
+    Misc.Pause(2500)
+    spinBolts()
+    Items.UseItem(0x42E87E92)
+    Misc.Pause(500)
+    Items.UseItem(0x435ED948)
+    Misc.Pause(500)
+    lootList = [0x1081,0x1BD1,0x09F1,0x0EED]
+    for i in Player.Backpack.Contains:
+        if i.ItemID == 0x0F95 or i.ItemID == 0x1081:
+            Items.Move(i,0x435ED948,-1)
+            Misc.Pause(1000)
+    for i in Player.Backpack.Contains:
+        if i.ItemID in lootList:
+            Items.Move(i,0x42E87E92,-1)
+            Misc.Pause(1000)
+    bandages = Items.BackpackCount(0x0E21,-1)
+    bolts = Items.ContainerCount(0x435ED948,0x0F95,-1)
+    bandages = Items.BackpackCount(0x0E21,-1)
+    bolts = Items.FindByID(0x0F95,-1,0x435ED948)
+    if bandages < 100:
+        Misc.Pause(500)
+        Items.Move(bolts,Player.Backpack.Serial,2)
+        Misc.Pause(1000)
+        Items.UseItemByID(0x0F9F,-1)
+        Misc.Pause(500)
+        packbolts = Items.FindByID(0x0F95,-1,Player.Backpack.Serial)
+        Target.TargetExecute(packbolts)
+        Misc.Pause(500)
+        packcloth = Items.FindByID(0x1766,-1,Player.Backpack.Serial)
+        Items.UseItemByID(0x0F9F,-1)
+        Misc.Pause(500)
+        Target.TargetExecute(packcloth)
+        Misc.Pause(500)        
+    Items.UseItem(0x42E88440)
+    Misc.Pause(500)
+    stockRegs()
+    Player.PathFindTo(6800, 3898, 17)
+    Misc.Pause(2500)
+    Items.UseItem(0x42EA55BA)
+    Misc.Pause(500)
+
+    
+def armSelf():
+    while True:
+        staff = Items.FindByID(0x0E89,-1,Player.Backpack.Serial)
+        if staff:
+            Player.EquipItem(staff)
+            Misc.Pause(500)
+            if not Player.CheckLayer("LeftHand"):
+                Misc.Pause(250)
+                Player.HeadMessage(64,"Failed hand check")
+                Misc.Pause(250)
+                Player.EquipItem(staff)
+                Misc.Pause(500)
+            else:
+                break
+        else:
+            Misc.Pause(500)
+            break
+        
+    
+        
+def killChickens():
+    armSelf()
+    Misc.Pause(500)
+    while True:
+        chickenFilter = Mobiles.Filter()
+        chickenFilter.Enabled = True
+        chickenFilter.Notorieties = List[Byte](bytes([3,4,6])) # optional, numbers = notoritety codes
+        chickenFilter.RangeMax = 2
+        chickenList = Mobiles.ApplyFilter(chickenFilter)
+        
+        if len(chickenList) == 0:
+            break
+
+        for chicken in chickenList:
+            Player.Attack(chicken)
+            Misc.Pause(500)
+            while Player.DistanceTo(chicken) > 1:
+                Misc.Pause(250)
+                Player.DistanceTo(chicken)
+            while Mobiles.FindBySerial(chicken.Serial):
+                Misc.Pause(500)
+                if Player.DistanceTo( chicken ) > 1:
+                    break
+                deadCheck()
+            Misc.Pause(500)
+        lootGame()
+            
+def calculate_distance(item):
+    # Function to calculate distance from the player to an item
+    return Player.DistanceTo(item)
+                    
+def killGame():
+    armSelf()
+    gameFilter = Mobiles.Filter()
+    gameFilter.Enabled = True
+    gameFilter.Notorieties = List[Byte](bytes([3,4,6]))
+    gameFilter.RangeMax = 9
+    gameFilter.CheckIgnoreObject = True
+    gameFilter.CheckLineOfSight = True
+    gameList = Mobiles.ApplyFilter(gameFilter)
+    gameList = sorted(gameList, key=calculate_distance)
+    
+    while True:
+        
+        if len(gameList) == 0:
+            Player.HeadMessage(64,"This hunt is played out.")
+            Misc.Pause(1000)
+            break
+            
+        for game in gameList:
+            if Player.Weight > 340:
+                break
+                Misc.Pause(500)
+            if game.Name == "a corpser":
+                Misc.Pause(500)
+                Player.HeadMessage(64,game.Name+", you\'re not worth it.")
+                Misc.Pause(500)
+                Misc.IgnoreObject(game)
+                continue
+            if game.Hits < 6:
+                Player.HeadMessage(64,str(game.Hits)    +" hits left."+game.Name+", you\'re not worth it.")
+                Misc.Pause(500)
+                Misc.IgnoreObject(game)
+                continue
+            else:
+                startTime = time.time()
+                Misc.Pause(500)
+                Player.HeadMessage(64,"Ah, "+str(game.Name)+"!")
+                Player.Attack(game)
+                Misc.Pause(500)
+                #wait for prey to approach
+                while Player.DistanceTo(game) > 1:
+                    currentTime = time.time()
+                    if currentTime - startTime > 30:
+                        Player.HeadMessage(64,"This is taking longer than it should.")
+                        break                    
+                    Misc.Pause(250)
+                    Player.DistanceTo(game)
+                while Mobiles.FindBySerial(game.Serial):
+                    Misc.Pause(500)
+                    healthCheck()
+                    currentTime = time.time()
+                    if currentTime - startTime > 60:
+                        Player.HeadMessage(64,"This is taking longer than it should.")
+                        break
+                    if Player.DistanceTo( game ) > 1:
+                        Player.HeadMessage(64,"What a pussy!")
+                        Misc.Pause(200)
+                        break
+                        
+                    deadCheck()
+                deadCheck()
+        Misc.Pause(500)
+        gameList = Mobiles.ApplyFilter(gameFilter)
+    lootGame()    
+    checkWeight()
+        
+def checkWeight():
+    if Player.Weight > 340:
+        goHome()
+        Misc.ScriptStop("FarmGod.py")
+        
+def reapField():
+    def calculate_distance(item):
+        # Function to calculate distance from the player to an item
+        return Player.DistanceTo(item)
+        
+    while True:    
+        flaxFilter = Items.Filter()
+        flaxFilter.Enabled = True
+        flaxFilter.Name = "flax"
+        flaxFilter.OnGround = True
+        flaxFilter.RangeMax = 12
+        flaxList = Items.ApplyFilter(flaxFilter)
+        flaxList = sorted(flaxList, key=calculate_distance)
+        
+        if len(flaxList) == 0:
+            Player.HeadMessage(64,"Nothing to reap yet.")
+            Misc.Pause(1000)
+            
+        flaxList = sorted(flaxList, key=calculate_distance)
+        
+        if not flaxList:
+            break
+            
+        flax = flaxList[0]
+        if flax in flaxList:
+            flaxPosition = flax.Position
+            flaxCoords = PathFinding.Route()
+            flaxCoords.MaxRetry = 5
+            flaxCoords.StopIfStuck = False
+            flaxCoords.X = flaxPosition.X
+            flaxCoords.Y = flaxPosition.Y
+            PathFinding.Go( flaxCoords )
+            
+            while Player.DistanceTo(flax) > 1:  # Adjust the threshold as needed
+                Misc.Pause(500)
+             
+            if flax:    
+                Items.UseItem(flax)
+                Misc.Pause(500)
+                deadCheck()
+        
+        
+def reapTrash():
+    def calculate_distance(item):
+        # Function to calculate distance from the player to an item
+        return Player.DistanceTo(item)
+
+    breedList = [0x0CBB,0x0C58,0x0CA5,0x0C57,0x0C55,0x0C56]
+    bundleList = [0x1EBD,0x3184,0x030c]
+
+    while True:
+        trashFilter = Items.Filter()
+        trashFilter.Enabled = True
+        trashFilter.OnGround = True
+        trashFilter.RangeMax = 6
+        trashFilter.Graphics = List[int]([0x0CBB,0x0C58,0x0CA5,0x0C57,0x0C55,0x0C56])
+        trashList = Items.ApplyFilter(trashFilter)
+
+        if len(trashList) == 0:
+            Player.HeadMessage(64, "No mroe weeds to pull.")
+            Misc.Pause(500)
+
+
+        trashList = sorted(trashList, key=calculate_distance)
+
+        # If there are no more items, break the loop
+        if not trashList:
+            break
+
+        # Process the first item in the sorted list
+        trash = trashList[0]
+        if trash.ItemID in breedList and trash:
+            trashPosition = trash.Position
+            trashCoords = PathFinding.Route()
+            trashCoords.MaxRetry = 5
+            trashCoords.StopIfStuck = False
+            trashCoords.X = trashPosition.X
+            trashCoords.Y = trashPosition.Y
+            PathFinding.Go(trashCoords)
+                
+        while Player.DistanceTo(trash) > 1:
+            Misc.Pause(500)
+
+        if trash:
+            Items.UseItem(trash)
+            Misc.Pause(500)
+            deadCheck()
+            
+
+    # Process the bundle list
+    for t in Player.Backpack.Contains:
+        if t.ItemID in bundleList:
+            Misc.Pause(200)
+            Items.MoveOnGround(t, -1, Player.Position.X - 1, Player.Position.Y, Player.Position.Z)
+            Misc.Pause(1000)
+
+    Misc.Pause(1000)  # Wait a bit before starting the next cycle
+
+        
+Journal.Clear()
+Misc.ClearIgnore()
+BandageHeal.Start()
+Player.ChatSay(64,"Making a harvest run in 90 seconds.")
+Misc.Pause(90000)
+Items.UseItem(0x42EA55BA)
+Misc.Pause(500)
+staff = Items.FindByID(0x0E89,-1,0x42EA55BA)
+if staff:
+    Items.Move(staff,Player.Backpack.Serial,1)
+    Misc.Pause(1000)
+worldSave()
+attempt_recall("Occlo Farm")
+killChickens()
+worldSave()
+Misc.Pause(1000)
+Player.PathFindTo(3711, 2659, 20)
+Misc.Pause(2000)
+Player.PathFindTo(3711, 2662, 20) #north field
+Misc.Pause(4000)
+killGame()
+worldSave()
+reapTrash()
+Player.PathFindTo(3711, 2670, 20) #north field
+Misc.Pause(6000)
+reapField()
+Misc.Pause(1000)
+Player.PathFindTo(3711, 2683, 20) #south field
+Misc.Pause(6000)
+killGame()
+worldSave()
+reapField()
+Player.PathFindTo(3711, 2683, 20) #south field
+Misc.Pause(6000)
+reapTrash()
+Misc.Pause(1000)
+Player.PathFindTo(3710, 2693, 20) #south-south field
+Misc.Pause(6000)
+killGame()
+worldSave()
+reapField()
+Player.PathFindTo(3710, 2693, 20) #south-south field
+Misc.Pause(6000)
+reapTrash()
+Misc.Pause(1000)
+Player.PathFindTo(3722, 2683, 28) #southeast field
+Misc.Pause(8000)
+killGame()
+checkWeight()
+Misc.Pause(1000)
+Player.PathFindTo(3724, 2670, 34) #northeast field
+Misc.Pause(8000)
+killGame()
+worldSave()
+Player.PathFindTo(3738, 2663, 40) #east field
+Misc.Pause(8000)
+killGame()
+checkWeight()
+Misc.Pause(1000)
+Player.PathFindTo(3739, 2652, 40) 
+Misc.Pause(8000)
+killGame()
+worldSave()
+checkWeight()
+Player.PathFindTo(3744, 2635, 40)
+Misc.Pause(8000)
+killGame()
+worldSave()
+checkWeight()
+Player.PathFindTo(3732, 2616, 40) 
+Misc.Pause(8000)
+killGame()
+worldSave()
+checkWeight()
+Player.PathFindTo(3714, 2613, 20) 
+Misc.Pause(8000)
+killGame()
+worldSave()
+checkWeight()
+Player.PathFindTo(3714, 2627, 20) 
+Misc.Pause(8000)
+killGame()
+worldSave()
+checkWeight()
+goHome()
+worldSave()
+attempt_recall("Bulls")
+worldSave()
+killGame()
+checkWeight()
+worldSave()
+attempt_recall("Moonglow")
+killGame()
+deadCheck()
+worldSave()
+checkWeight()
+worldSave()
+killGame()
+attempt_recall("Harpies")
+killGame()
+deadCheck()
+worldSave()
+checkWeight()
+worldSave()
+killGame()
+attempt_recall("Lizards")
+Items.UseItem(0x40002CED)
+Misc.Pause(4000)        
+killGame()
+deadCheck()
+worldSave()
+killGame()
+goHome()
+Misc.Pause(500)
+Items.UseItem(0x42EA55BA)
+Misc.Pause(500)
+staff = Items.FindByID(0x0E89,-1,Player.Backpack.Serial)
+if staff:
+    Items.UseItemByID(0x1034,-1)
+    Misc.Pause(500)
+    Gumps.WaitForGump(949095101, 10000)
+    Gumps.SendAction(949095101, 42)
+    Misc.Pause(500)
+    Target.TargetExecute(staff)
+    Misc.Pause(500)
+    Gumps.WaitForGump(949095101, 10000)
+    Gumps.SendAction(949095101, 0)
+    Misc.Pause(500)
+    Items.Move(staff,0x42EA55BA,1)
+    Misc.Pause(1000)
+Misc.ClearIgnore()
+
