@@ -1,9 +1,16 @@
+Misc.Pause(2000)
+Misc.ScriptRun("bandageAssist.py")
+Misc.Pause(500)
+Misc.ScriptRun("auto_lumberjack.py")
+
+
 while True:
-    Misc.ScriptRun("auto_lumberjack.py")
     while Misc.ScriptStatus("auto_lumberjack.py"):
         Misc.Pause(1000)
 
-    Misc.Pause(1000)
+    Misc.Pause(500)
+    Player.ChatSay("All follow me")
+    Misc.Pause(500)
     Player.ChatSay("[recall Winter Lodge")
     Misc.Pause(2500)
     Player.PathFindTo(6802, 3901, 12)
@@ -17,30 +24,49 @@ while True:
     Misc.ContextReply(0x001523D4, 10)
     Misc.Pause(500)
         
-    woodBox = Items.FindBySerial(0x42E87E92)
+
     beetle = Mobiles.FindBySerial(0x001523D4)
-    Items.UseItem(woodBox)
+    wood_pouch = Items.FindBySerial(0x41132AE2)
+    leather_pouch = Items.FindBySerial(0x435ED948)
+    wood_box = Items.FindBySerial(0x42E87E92) 
+    Items.UseItem(wood_box)
     Misc.Pause(500)
-    Items.UseItem(0x435ED948)
+    Items.UseItem(wood_pouch)
+    Misc.Pause(500)
+    Items.UseItem(leather_pouch)
     Misc.Pause(500)
 
+
+    # Move items from players backpack
     for i in Player.Backpack.Contains:
-        if i.ItemID in [0x1081,0x1BDD]:
+        if i.ItemID == 0x1BDD: #wood
             Items.Move(i,0x41132AE2,-1)
             Misc.Pause(1000)
-    for i in Player.Backpack.Contains:
-        if i.ItemID == 0x0EED:
-            Items.Move(i,woodBox,-1)
+        elif i.ItemID == 0x0EED: #gold
+            Items.Move(i,0x42E87E92,-1)
             Misc.Pause(1000)
+        elif i.ItemID == 0x0F7E: #bone
+            Items.Move(i,0x42E87E92,-1)
+            Misc.Pause(1000)
+        elif i.ItemID == 0x1081: #leather
+            Items.Move(i,0x435ED948,-1)
+            Misc.Pause(1000)
+    # Move items from beetles backpack
     for i in beetle.Backpack.Contains:
-        if i.ItemID in [0x1081,0x1BDD]:
+        if i.ItemID == 0x1BDD: #wood
             Items.Move(i,0x41132AE2,-1)
             Misc.Pause(1000)
-            
+        elif i.ItemID == 0x1081: #leather
+            Items.Move(i,0x435ED948,-1)
+            Misc.Pause(1000)
+        
     bandages = Items.BackpackCount(0x0E21,-1)
     bolts = Items.FindByID(0x0F95,-1,0x435ED948)
     if bandages < 100:
         Misc.Pause(500)
+        Items.UseItem(leather_pouch)
+        Misc.Pause(500)
+        bolts = Items.FindByID(0x0F95,-1,0x435ED948)
         Items.Move(bolts,Player.Backpack.Serial,2)
         Misc.Pause(1000)
         Items.UseItemByID(0x0F9F,-1)
