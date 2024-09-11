@@ -1,8 +1,7 @@
 restockBeetle = False
-
-amountToMake = 10000
-restockChestSerial = 0x426CF57C
-dragTime = 600
+amountToMake = 1000
+restockChestSerial = 0x42E88440
+dragTime = 1500
 bp = 0x0F7A
 bm = 0x0F7B
 mr = 0x0F86
@@ -12,36 +11,50 @@ recall = 0x1F4C
 noColor = 0x0000
 pack = Player.Backpack.Serial
 
-beetle = 0x0023F0A0
-beetleContainer = 0x439F1BD4 # Inspect item in beetle to get container
+beetle = 0x0001B940
+beetleContainer = 0x4033401B # Inspect item in beetle to get container
 
 
 restockChest = Items.FindBySerial(restockChestSerial)
+penChest = Items.FindBySerial(0x42E88440)
 
 import sys
 def craftRecall():
     #pens = Items.FindByID(0x0FBF,-1,pack)
-    pens = FindItem(0x0FBF, Player.Backpack)
+    pens = Items.FindByID(0x0FBF,-1,Player.Backpack.Serial)
     Items.UseItem(pens)
+    Misc.Pause(1000)
     Gumps.WaitForGump(949095101, 2000)
     Gumps.SendAction(949095101, 22)
     Gumps.WaitForGump(949095101, 2000)
     Gumps.SendAction(949095101, 51)
     Gumps.WaitForGump(949095101, 2000)
-    
+    Misc.Pause(500)
+    scroll = Items.FindByID(0x1F4C,-1,Player.Backpack.Serial)
+    while scroll:
+        Items.Move(scroll,0x42E87E92,-1)
+        Misc.Pause(1000)
+        scroll = Items.FindByID(0x1F4C,-1,Player.Backpack.Serial)
     if Player.Mana < 20:
         med()
         
 def med():
-    Player.UseSkill('Meditation')
-    Timer.Create('med', 7000)
-    Misc.Pause(dragTime)
-    while Player.Mana < Player.ManaMax:
+    Player.UseSkill('Meditation')  # Start by using the Meditation skill
+    Timer.Create('med', 14000)  # Create a timer for 14 seconds (meditation cooldown)
+    Misc.Pause(dragTime)  # Pause for a short duration
+    
+    while Player.Mana < Player.ManaMax:  # Continue until players mana is full
+        # Only attempt meditation if the player is not already meditating and the timer has expired
         if not Player.BuffsExist('Meditation') and Timer.Check('med') == False:
-            Misc.Pause(2000)
-            Player.UseSkill('Meditation')
-            Timer.Create('med', 7000)
-        Misc.Pause(100)
+            Misc.Pause(2000)  # Wait 2 seconds before reattempting to meditate
+            Player.UseSkill('Meditation')  # Try to meditate again
+            Timer.Create('med', 7000)  # Start a 7-second timer after the attempt
+            Misc.Pause(1000)  # Wait 1 second after reattempting to meditate
+        
+        # If player is already meditating, simply wait for mana regeneration
+        else:
+            Misc.Pause(1000)  # Pause for a short time and check again
+
     
 
 def unload():
@@ -176,7 +189,7 @@ def restock():
             Misc.Pause(dragTime)
             unload()
     if Items.BackpackCount(pen, -1) < 1:
-        restockPen = FindItem(pen, restockChest)
+        restockPen = FindItem(pen, penChest)
         Items.Move(restockPen, pack, 0)
         Misc.Pause(dragTime)
     

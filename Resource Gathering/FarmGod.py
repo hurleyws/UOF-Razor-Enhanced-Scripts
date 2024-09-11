@@ -7,7 +7,7 @@ import random
 
 #Mark false if you want to run cemetaries only
 #Mark saveDelay false if you want to skip the 90 second wait
-farmRun = False
+farmRun = True
 saveDelay = True
 #Set to True if checking the loop box for troubleshooting
 looping = False
@@ -925,6 +925,7 @@ if farmRun:
 
 goHome()
 Misc.ClearIgnore()
+Misc.ScriptRun("master_Organizer.py")
 
 if looping:
     Misc.SendMessage("Looping in 7 minutes")
