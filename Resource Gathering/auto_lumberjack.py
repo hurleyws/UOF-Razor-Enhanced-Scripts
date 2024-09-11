@@ -12,7 +12,7 @@ if Player.GetRealSkillValue('Lumberjacking') < 40:
 
 #********************
 # serial of your beetle, logs go here when full
-beetle = 0x001523D4
+beetle = 0x001523D400
 
 # Attack nearest grey script name (must be exact)
 autoFightMacroName = 'attack_nearest_Zastore.py'
@@ -280,8 +280,9 @@ def CutTree():
     if Player.Weight >= weightLimit:
         MoveToBeetle()
         MoveToTree()
-
+    
     CheckEnemy()
+    worldSave()
 
     Journal.Clear()
 
@@ -290,6 +291,7 @@ def CutTree():
     #EXPERIMENTAL PAUSE ADD
     Misc.Pause(1000)
     Target.TargetExecute( trees[ 0 ].x, trees[ 0 ].y, trees[ 0 ].z, trees[ 0 ].id )
+    worldSave()
     Timer.Create('chopTimer', 10000)
     while not ( Journal.SearchByType( 'You hack at the tree for a while, but fail to produce any useable wood.', 'System' ) or 
         Journal.SearchByType( 'You chop some', 'System' ) or 
@@ -454,15 +456,38 @@ def filterItem(id,range=2, movable=True):
 
     
 def worldSave():
-    if (Journal.SearchByType('The world will save in 1 minute.', 'System') or Journal.SearchByType('pause', 'Regular')):
+    manualPause = False
+    
+    # Check for world save or manual pause
+    if Journal.SearchByType('The world will save in 1 minute.', 'System') or Journal.SearchByType('pause', 'Regular'):
         Misc.Pause(700)
-        Misc.SendMessage('Pausing for world save or player-called break.', 33)
-        while (not Journal.SearchByType('World save complete.', 'System') and not Journal.SearchByType('play', 'Regular')):
+        
+        # If "pause" is typed, set manualPause flag
+        if Journal.SearchByType('pause', 'Regular'):
+            manualPause = True
+            Misc.SendMessage('Manual pause initiated.', 33)
+        else:
+            Misc.SendMessage('Pausing for world save.', 33)
+        
+        # Loop until a resume condition occurs
+        while True:
             Misc.Pause(1000)
+
+            # If world save finishes and were NOT in manual pause, resume
+            if not manualPause and Journal.SearchByType('World save complete.', 'System'):
+                break
+
+            # If "play" is typed during manual pause, resume
+            if manualPause and Journal.SearchByType('play', 'Regular'):
+                break
+
         Misc.Pause(2500)
-        Misc.SendMessage('Continuing run', 33)
+        Misc.SendMessage('Continuing run.', 33)
         Misc.Pause(700)
+
     Journal.Clear()
+
+    
     
 def MoveToBeetle():
     max_capacity = 15000
