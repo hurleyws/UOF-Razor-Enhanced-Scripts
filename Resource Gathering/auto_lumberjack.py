@@ -12,7 +12,7 @@ if Player.GetRealSkillValue('Lumberjacking') < 40:
 
 #********************
 # serial of your beetle, logs go here when full
-beetle = 0x001523D400
+beetle = 0x001523D4
 
 # Attack nearest grey script name (must be exact)
 autoFightMacroName = 'attack_nearest_Zastore.py'

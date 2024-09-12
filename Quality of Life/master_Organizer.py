@@ -13,7 +13,7 @@ def move_items(item_list, item_id, target_x, target_y, pause=750):
         if isinstance(item_id, list) and item.ItemID in item_id or item.ItemID == item_id:
             # If the items position matches the target position, skip moving it
             if item.Position.X == target_x and item.Position.Y == target_y:
-                continue  # Skip this item, it's already in place
+                continue  # Skip this item, its already in place
             
             # Move the item to the new position if its not already there
             Items.Move(item, Player.Backpack.Serial, -1, target_x, target_y)
@@ -61,7 +61,22 @@ if Player.Name == 'ToolmanTailor':
     move_items(player_items, wands, 143, 125)
 
 
+# Hurlpea-specific item placement
+if Player.Name == 'Hurlpea':
+    player_items = Player.Backpack.Contains
 
+    # Reagents (regs) to top left
+    move_items(player_items, regs, 43, 64)
+    
+    # Ethereal to left center
+    move_items(player_items, 0x20DD, 43, 77)
+
+    # Runes to top right
+    move_items(player_items, 0x1F14, 158, 64)
+
+    # Staff to bottom right
+    move_items(player_items, wands, 143, 125)
+    
 # Zastore-specific item placement
 if Player.Name == 'Zastore':
     player_items = Player.Backpack.Contains

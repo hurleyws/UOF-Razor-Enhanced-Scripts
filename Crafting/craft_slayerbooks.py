@@ -5,13 +5,13 @@
 # Moves slayers to beetle
 # Must have tooltips enabled
 from System.Collections.Generic import List
+from System import Int32 as int
 
 #***************SETUP SECTION**********************************
 
 keepAll = False # true to keep all slayers, false keeps only ones in keepSlayerProps
 
-keepSlayerProps = ['Silver','Reptilian Death','Elemental Ban','Repond','Exorcism','Arachnid Doom','Fey Slayer',
-    'Balron Damnation','Daemon Dismissal','Orc Slaying','Dragon Slaying'] 
+keepSlayerProps = ['Water Dissipation','Silver','Reptilian Death','Elemental Ban','Repond','Exorcism','Arachnid Doom','Fey Slayer',] 
 
 #**************************************************************
 
@@ -145,6 +145,8 @@ def restockScrolls():
         Player.HeadMessage (66, 'Restocking')
         Items.Move(beetleScrolls, self_pack, 500)
         Misc.Pause(dragTime)
+        Player.HeadMessage(64,str(Items.ContainerCount(beetleContainer,scrolls,-1)))
+        Misc.Pause(1000)
     
     if not Player.Mount and itsAbeetle:
         Mobiles.UseMobile(beetle)
