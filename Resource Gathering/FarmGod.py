@@ -54,28 +54,6 @@ loot_list.extend(bones)
 
 fragIDs = [0x2244,0x2243,0x2242,0x2241,0x223D,0x223C]
 
-def moveToCoordinates(targetX, targetY, targetZ):
-    while True:
-        # Get the players current position
-        currentX = Player.Position.X
-        currentY = Player.Position.Y
-        currentZ = Player.Position.Z
-
-        # Check if the player is already at the target coordinates
-        if currentX == targetX and currentY == targetY and currentZ == targetZ:
-            Misc.SendMessage("On Position")
-            break  # Exit the function
-        else:
-            Misc.SendMessage("Out of position, moving to target...")
-            Player.PathFindTo(targetX, targetY, targetZ)
-            
-            # Continue checking the position every 500 milliseconds until we reach the target
-            while not (currentX == targetX and currentY == targetY and currentZ == targetZ):
-                Misc.Pause(500)  # Pause for 500 milliseconds
-                currentX = Player.Position.X
-                currentY = Player.Position.Y
-                currentZ = Player.Position.Z
-
 def combineFrags():
     # Step 1: Search the players backpack for a fragment
     originalFrag = None
@@ -523,58 +501,7 @@ def killGame():
             if Player.Weight > 340:
                 Misc.SendMessage("Overweight, stopping.")
                 Misc.Pause(500)
-                deadCheck()
-                attempt_recall("Winter Lodge")
-                Player.PathFindTo(6802, 3901, 12)
-                Misc.Pause(1500)
-                Player.PathFindTo(6803, 3897, 17)
-                Misc.Pause(2500)
-                spinBolts()
-                Items.UseItem(0x42E87E92)
-                Misc.Pause(500)
-                Items.UseItem(0x435ED948)
-                Misc.Pause(500)
-                cutBones()
-                lootList = [0x1BD1,0x09F1,0x0EED]
-                for i in Player.Backpack.Contains:
-                    if i.ItemID == 0x0F95 or i.ItemID == 0x1081 or i.ItemID == 0x0F7E: #bolt, leather, bones
-                        Items.Move(i,0x435ED948,-1)
-                        Misc.Pause(1000)
-                for i in Player.Backpack.Contains:
-                    if i.ItemID in lootList: #feather, meat, or gold
-                        Items.Move(i,0x42E87E92,-1)
-                        Misc.Pause(1000)
-                bandages = Items.BackpackCount(0x0E21,-1)
-                bolts = Items.ContainerCount(0x435ED948,0x0F95,-1)
-                bandages = Items.BackpackCount(0x0E21,-1)
-                bolts = Items.FindByID(0x0F95,-1,0x435ED948)
-                if bandages < 100:
-                    Misc.Pause(500)
-                    Items.Move(bolts,Player.Backpack.Serial,2)
-                    Misc.Pause(1000)
-                    Items.UseItemByID(0x0F9F,-1)
-                    Misc.Pause(500)
-                    packbolts = Items.FindByID(0x0F95,-1,Player.Backpack.Serial)
-                    Target.TargetExecute(packbolts)
-                    Misc.Pause(500)
-                    packcloth = Items.FindByID(0x1766,-1,Player.Backpack.Serial)
-                    Items.UseItemByID(0x0F9F,-1)
-                    Misc.Pause(500)
-                    Target.TargetExecute(packcloth)
-                    Misc.Pause(500)  
-                Misc.Pause(500)
-                Items.UseItem(0x42E88440)
-                Misc.Pause(500)
-                stockRegs()
-                Player.PathFindTo(6800, 3898, 17)
-                Misc.Pause(2500)
-                Items.UseItem(0x42EA55BA)
-                Misc.Pause(500)
-                storeValuables()
-                combineFrags()
-                repairCheck()
-                getStaff()
-                Misc.ScriptStop("FarmGod.py")
+                break
 
             if game.Name == "a corpser":
                 Misc.SendMessage("Corpser, ignoring.")
@@ -614,6 +541,9 @@ def killGame():
                 Misc.Pause(250)
                 
             turn_opposite_to_mobile(game)
+            if Mobiles.FindBySerial(game.Serial) and Player.DistanceTo(game)< 2:
+                CUO.PlayMacro('Scream')
+                Misc.Pause(500)
             while Mobiles.FindBySerial(game.Serial):
                 # Check overall timer
                 if time.time() - overall_start_time > overall_time_limit:
@@ -624,8 +554,7 @@ def killGame():
                 if time.time() - engagement_start_time > 10:
                     Misc.SendMessage("Combat timeout, disengaging.")
                     break
-                    
-                CUO.PlayMacro('Scream')
+
                 Misc.Pause(500)
                 healthCheck()
                 armSelf()
@@ -638,10 +567,10 @@ def killGame():
                 deadCheck()
 
             deadCheck()
-
-        Misc.Pause(500)
-        gameList = Mobiles.ApplyFilter(gameFilter)
-
+            break
+        
+            
+        
     
     Misc.ClearIgnore()
     checkWeight()
@@ -836,7 +765,7 @@ def invasionCheck():
             Misc.Pause(90000)
         worldSave()
         # List of possible locations
-        locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Moonglow Cemetary","Deceit"]
+        locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Moonglow Cemetary","Deceit","Mummies"]
         # Shuffle the list of locations to create a randomized order
         random.shuffle(locations)
 
@@ -869,7 +798,7 @@ def invasionCheck():
 invasionCheck()
 
 # List of possible locations
-locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Moonglow Cemetary","Deceit","Lizards"] #remove hot zones here
+locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Moonglow Cemetary","Deceit","Lizards","Mummies"] #remove hot zones here
 # Shuffle the list of locations to create a randomized order
 random.shuffle(locations)
 
@@ -976,7 +905,6 @@ if farmRun:
 
 goHome()
 Misc.ClearIgnore()
-Misc.ScriptRun("master_Organizer.py")
 
 if looping:
     Misc.SendMessage("Looping in 7 minutes")

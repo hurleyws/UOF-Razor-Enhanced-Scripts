@@ -67,7 +67,7 @@ def main():
 
         # Use smith hammer and set to iron
         Items.UseItemByID(0x13E3, 0x0000)
-        Misc.Pause(500)
+        Misc.Pause(750)
         Gumps.WaitForGump(949095101, 10000)
         Gumps.SendAction(949095101, 7)  # Set material to iron
         Gumps.WaitForGump(949095101, 10000)
@@ -80,26 +80,26 @@ def main():
 
             # Craft item
             Items.UseItemByID(0x13E3, 0x0000)
-            Misc.Pause(500)
+            Misc.Pause(750)
             Gumps.WaitForGump(949095101, 10000)
             Gumps.SendAction(949095101, 36)  # Craft option
             Gumps.WaitForGump(949095101, 10000)
             Gumps.SendAction(949095101, 16)
-            Misc.Pause(1500)
+            Misc.Pause(1750)
             Journal.Clear()
 
             # Recycle unwanted items
             while Items.BackpackCount(0x0F52, -1) > 0:
                 Items.UseItemByID(0x13E3, 0x0000)
-                Misc.Pause(500)
+                Misc.Pause(750)
                 Gumps.WaitForGump(949095101, 10000)
                 Gumps.SendAction(949095101, 14)  # Recycle option
                 Target.WaitForTarget(2000)
                 item_to_recycle = Items.FindByID(0x0F52, -1, Player.Backpack.Serial)
                 if item_to_recycle:
                     Target.TargetExecute(item_to_recycle)
-                    Misc.Pause(350)
-                Misc.Pause(100)
+                    Misc.Pause(500)
+                Misc.Pause(200)
 
         # Recalling to storage (Winter)
         Player.ChatSay("[recall Winter Lodge")

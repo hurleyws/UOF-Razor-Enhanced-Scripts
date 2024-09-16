@@ -1,0 +1,9 @@
+{
+  "scopeName": "source.python.razorenhanced",
+  "patterns": [
+    {
+      "match": "\\b(def|class|return)\\b",
+      "name": "keyword.control.razorenhanced"
+    }
+  ]
+}
