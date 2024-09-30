@@ -444,8 +444,13 @@ partialBookSerial = Target.PromptTarget("Select Book where move PARTIALLY FILLED
 
 smallBook = scanBook(smallBookItem)
 
+iteration_count = 0
+
 while True:
     Misc.Pause(1000)
+    iteration_count += 1  # Increment the counter
+
+    Player.HeadMessage(64, f"Iteration {iteration_count}")  # Display the current iteration
 
     [largeBod, largeBodSerial] = readFirstLargeAvailable(largeBookItem)
     if largeBod is None:
@@ -460,10 +465,10 @@ while True:
     else:
         fullFilled = combineBods(largeBodSerial)
         if not fullFilled:
-            # If not fully filled i put in partially filled book
+            # If not fully filled, put in partially filled book
             Items.Move(largeBodSerial, partialBookSerial, 1)
         else:
-            # If fully filled i put in filled book
+            # If fully filled, put in filled book
             Items.Move(largeBodSerial, filledBookSerial, 1)
 
         Misc.Pause(250)

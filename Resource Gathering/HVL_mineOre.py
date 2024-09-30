@@ -2,6 +2,12 @@
 import sys
 from System.Collections.Generic import List
 
+#################
+#PROSPECTING???##
+#SET TO TRUE#####
+prospect = False
+
+
 beetle = 0x002B1782 # watches = 0x000CDBE0
 beetlepack = 0x467F1254 # watches = 0x423495E0
 door = 0x402F1C41
@@ -47,14 +53,18 @@ def toolCheck():
         Items.UseItem(ingotbox)
         Misc.Pause(500)
         for x in range (3-axecount):
-            Items.Move(Items.FindByID(0x0E86,0x0000,ingotbox.Serial),Player.Backpack.Serial,1)
-            Misc.Pause(1000)
-    if prospcount < 3:
+            axeTool = Items.FindByID(0x0E86,0x0000,ingotbox.Serial)
+            if axeTool:
+                Items.Move(axeTool,Player.Backpack.Serial,1)
+                Misc.Pause(1000)
+    if prospect and prospcount < 3:
         Items.UseItem(ingotbox)
         Misc.Pause(500)
         for x in range (3-prospcount):
-            Items.Move(Items.FindByID(0x0FB4,0x0000,ingotbox.Serial),Player.Backpack.Serial,3-prospcount)
-            Misc.Pause(1000)
+            prospTool = Items.FindByID(0x0FB4,0x0000,ingotbox.Serial)
+            if prospTool:
+                Items.Move(prospTool,Player.Backpack.Serial,3-prospcount)
+                Misc.Pause(1000)
 
 def smeltAll():
     Mobiles.UseMobile(Player.Serial) 
@@ -137,9 +147,15 @@ def mineAtLocation(*args):
         Target.TargetExecute(*args)
         Misc.Pause(1000)  # Pass all received arguments to TargetExecute
         moveOre()
-
+        
+def prospectLocation(*args):
+    Items.UseItemByID(0x0FB4,-1)
+    Misc.Pause(500)
+    Target.TargetExecute(*args)
+    Misc.Pause(500)
+        
 while True:
-    Journal.Clear()
+    Journal.Clear()    
     toolCheck()
     worldSave()
     Misc.Pause(200)
@@ -152,12 +168,16 @@ while True:
         Mobiles.UseMobile(beetle)
         Misc.Pause(1000)
     Player.PathFindTo(2145,342,0)
-    Misc.Pause(3000)
+    Misc.Pause(4000)
     #REFRESH EAST HOUSE
+    Player.PathFindTo(2154,328,0)
+    Misc.Pause(3000)
     Player.PathFindTo(2167,319,0)
     Misc.Pause(4000)
+    Player.PathFindTo(2179,318,0)
+    Misc.Pause(3000)
     Player.PathFindTo(2198,311,0)
-    Misc.Pause(5000)
+    Misc.Pause(3000)
     Player.PathFindTo(2197,301,0)
     Misc.Pause(2000)
     Mobiles.UseMobile(Player.Serial) 
@@ -201,10 +221,8 @@ while True:
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2163, 316, 0)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2163, 316, 0)
     worldSave()
     Journal.Clear()
     mineAtLocation(2163,316,0)   
@@ -246,9 +264,8 @@ while True:
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2153,307,1)
+    if prospect:
+        prospectLocation(2153,307,1)
     worldSave()
     Journal.Clear()
     mineAtLocation(2153,307,1)
@@ -269,10 +286,8 @@ while True:
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2149,310,6)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2149,310,6)
     worldSave()
     Journal.Clear()
     mineAtLocation(2149,310,6)
@@ -282,10 +297,8 @@ while True:
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2147,316,0)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2147,316,0)
     worldSave()
     Journal.Clear()
     mineAtLocation(2147,316,0)
@@ -320,10 +333,8 @@ while True:
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2123,310,14)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2123,310,14)
     worldSave()
     Journal.Clear()
     mineAtLocation(2123,310,14) 
@@ -360,10 +371,8 @@ while True:
     Misc.Pause(6000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2136,312,0)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2136,312,0)
     worldSave()
     Journal.Clear()
     mineAtLocation(2136,312,0)
@@ -402,10 +411,8 @@ while True:
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2125,331,4)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2125,331,4)
     worldSave()
     Journal.Clear()
     mineAtLocation(2125,331,4)
@@ -533,10 +540,8 @@ while True:
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2050, 388 ,0 ,6003)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2050, 388 ,0 ,6003)
     worldSave()
     Journal.Clear()
     mineAtLocation(2050, 388 ,0 ,6003)
@@ -546,10 +551,8 @@ while True:
     Misc.Pause(5000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2063, 400 ,0 ,6012)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2063, 400 ,0 ,6012)
     worldSave()
     Journal.Clear()
     mineAtLocation(2063, 400 ,0 ,6012)
@@ -559,10 +562,8 @@ while True:
     Misc.Pause(4000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2163,316,0)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2068, 380 ,0)
     worldSave()
     Journal.Clear()
     mineAtLocation(2068, 380 ,0)
@@ -617,10 +618,8 @@ while True:
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2204,301,4)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2204,301,4)
     worldSave()
     Journal.Clear()
     mineAtLocation(2204,301,4)
@@ -630,10 +629,8 @@ while True:
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2202,297,0,6003)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2202,297,0,6003)
     worldSave()
     Journal.Clear()
     mineAtLocation(2202,297,0,6003)
@@ -643,10 +640,8 @@ while True:
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2205,291,0)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2205,291,0)
     worldSave()
     Journal.Clear()
     mineAtLocation(2205,291,0)
@@ -656,10 +651,8 @@ while True:
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, 10)
-    Items.UseItemByID(0x0FB4,-1)
-    Misc.Pause(500)
-    Target.TargetExecute(2207,285,0)
-    Misc.Pause(500)
+    if prospect:
+        prospectLocation(2207,285,0)
     worldSave()
     Journal.Clear()
     mineAtLocation(2207,285,0)

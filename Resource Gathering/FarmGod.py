@@ -5,7 +5,7 @@ from System.Collections.Generic import List
 import time
 import random
 
-#Mark false if you want to run cemetaries only
+#Mark false if you want to run cemetaries 
 #Mark saveDelay false if you want to skip the 90 second wait
 farmRun = True
 saveDelay = True
@@ -34,11 +34,18 @@ relic_ID = 0x2AA2
 skeleStatue_ID = 0x20E7
 zombieStatue_ID = 0x20EC
 crystal_ID = 0x2244
+bandage_ID = 0x0E21
+
+regs = [
+0x0F7A, 0x0F7B,0x0F86,0x0F8C,0x0F84,0x0F88,0x0F85,0x0F8D,
+]
+
+rune_ids = [0x483B,0x483E,0x4841,0x4844,0x4847,0x484A,0x484D,0x4850,0x4853,0x4856,0x4859,0x485C,0x485F,0x4862,0x4865,0x4868,0x486B,0x4871,0x486E,0x4874,0x4877,0x487A,0x487D,0x4880,0x4883]
 
 loot_list  = [
     grizzlyStatue_ID, eagleStatue_ID, birdStatue_ID, deerStatue_ID, hide_ID, gold_ID,
     feathers_ID, wood_ID, arrow_ID, wool_ID, pile_ID, meat_ID, cloth_ID,
-    chickenStatue_ID, lizardStatue_ID, skill_scroll_id, wolfStatue_ID, relic_ID, skeleStatue_ID, zombieStatue_ID
+    chickenStatue_ID, lizardStatue_ID, skill_scroll_id, wolfStatue_ID, relic_ID, skeleStatue_ID, zombieStatue_ID, bandage_ID
 ]
 
 # New bones list
@@ -50,7 +57,8 @@ bones = [
 
 # Extend the loot list with the bones list
 loot_list.extend(bones)
-
+loot_list.extend(rune_ids)
+loot_list.extend(regs)
 
 fragIDs = [0x2244,0x2243,0x2242,0x2241,0x223D,0x223C]
 
@@ -264,24 +272,74 @@ def stockRegs():
     root = Items.BackpackCount(0x0F86,-1)
     moss = Items.BackpackCount(0x0F7B,-1)
     pearl = Items.BackpackCount(0x0F7A,-1)
+    picks = Items.BackpackCount(0x14FC,-1)
+    shade = Items.FindByID(0x0F88,-1,Player.Backpack.Serial)
+    garlic = Items.FindByID(0x0F84,-1,Player.Backpack.Serial)
+    ginseng = Items.FindByID(0x0F85,-1,Player.Backpack.Serial)
+    ash = Items.FindByID(0x0F8C,-1,Player.Backpack.Serial)
+    silk = Items.FindByID(0x0F8D,-1,Player.Backpack.Serial)
+    gold = Items.FindByID(0x0EED,-1,Player.Backpack.Serial)
+    scrolls = Items.FindByID(0x0EF3,-1,Player.Backpack.Serial)
+    logs = Items.FindByID(0x1BDD,-1,Player.Backpack.Serial)
+  
+    Items.UseItem(0x42E88440)
+    Misc.Pause(500)
+    Items.UseItem(0x42E87E92)
+    Misc.Pause(500)
     
-    Misc.Pause(200)
     
+    if picks < 15:
+        Items.Move(Items.FindByID(0x14FC,-1,0x42E88440),Player.Backpack.Serial,15-picks)
+        Misc.Pause(1000)  
+
     if root < 15:
         Items.Move(Items.FindByID(0x0F86,-1,0x42E88440),Player.Backpack.Serial,15-root)
         Misc.Pause(1000)
+    elif root > 15:
+        Items.Move(Items.FindByID(0x0F86,-1,Player.Backpack.Serial),0x42E88440,root-15)
+        Misc.Pause(1000)
+    else:
+        Misc.Pause(200)
     
     if moss < 15:
         Items.Move(Items.FindByID(0x0F7B,-1,0x42E88440),Player.Backpack.Serial,15-moss)
         Misc.Pause(1000)
+    elif moss > 15:
+        Items.Move(Items.FindByID(0x0F7B,-1,Player.Backpack.Serial),0x42E88440,moss-15)
+        Misc.Pause(1000)
+    else:
+        Misc.Pause(200)
         
     if pearl < 15:
         Items.Move(Items.FindByID(0x0F7A,-1,0x42E88440),Player.Backpack.Serial,15-pearl)
         Misc.Pause(1000)
-        
+    elif pearl > 15:
+        Items.Move(Items.FindByID(0x0F7A,-1,Player.Backpack.Serial),0x42E88440,pearl-15)
+        Misc.Pause(1000)
     else:
-        Player.HeadMessage(64,"Regs look good")
-        Misc.Pause(500)
+        Misc.Pause(200)
+        
+    if silk:
+        Items.Move(silk,0x42E88440,-1)
+        Misc.Pause(1000)
+    if ash:
+        Items.Move(ash,0x42E88440,-1)
+        Misc.Pause(1000)
+    if ginseng:
+        Items.Move(ginseng,0x42E88440,-1)
+        Misc.Pause(1000)
+    if garlic:
+        Items.Move(garlic,0x42E88440,-1)
+        Misc.Pause(1000)
+    if shade:
+        Items.Move(shade,0x42E88440,-1)
+        Misc.Pause(1000)
+    if gold:
+        Items.Move(gold,0x42E87E92,-1)
+        Misc.Pause(1000)
+    if scrolls:
+        Items.Move(scrolls,0x42E87E92,-1)
+        Misc.Pause(1000)
     
     
 
@@ -470,11 +528,13 @@ def killGame():
 
     def restart_function():
         Misc.SendMessage("Time limit exceeded, restarting killGame function.")
+        Misc.ClearIgnore()
         killGame()
+        
 
     armSelf()
     overall_start_time = time.time()
-    overall_time_limit = 3 * 60 + 30  # 3 minutes and 30 seconds in seconds
+    overall_time_limit = 60  # 1 minute
 
     while True:
         # Check if the overall time limit has been exceeded
@@ -501,7 +561,58 @@ def killGame():
             if Player.Weight > 340:
                 Misc.SendMessage("Overweight, stopping.")
                 Misc.Pause(500)
-                break
+                attempt_recall("Winter Lodge")
+                deadCheck()
+                Player.PathFindTo(6802, 3901, 12)
+                Misc.Pause(1500)
+                Player.PathFindTo(6803, 3897, 17)
+                Misc.Pause(2500)
+                spinBolts()
+                Items.UseItem(0x42E87E92)
+                Misc.Pause(500)
+                Items.UseItem(0x435ED948)
+                Misc.Pause(500)
+                cutBones()
+                lootList = [0x1BD1,0x09F1,0x0EED]
+                for i in Player.Backpack.Contains:
+                    if i.ItemID == 0x0F95 or i.ItemID == 0x1081 or i.ItemID == 0x0F7E: #bolt, leather, bones
+                        Items.Move(i,0x435ED948,-1)
+                        Misc.Pause(1000)
+                for i in Player.Backpack.Contains:
+                    if i.ItemID in lootList: #feather, meat, or gold
+                        Items.Move(i,0x42E87E92,-1)
+                        Misc.Pause(1000)
+                bandages = Items.BackpackCount(0x0E21,-1)
+                bolts = Items.ContainerCount(0x435ED948,0x0F95,-1)
+                bandages = Items.BackpackCount(0x0E21,-1)
+                bolts = Items.FindByID(0x0F95,-1,0x435ED948)
+                if bandages < 100:
+                    Misc.Pause(500)
+                    Items.Move(bolts,Player.Backpack.Serial,2)
+                    Misc.Pause(1000)
+                    Items.UseItemByID(0x0F9F,-1)
+                    Misc.Pause(500)
+                    packbolts = Items.FindByID(0x0F95,-1,Player.Backpack.Serial)
+                    Target.TargetExecute(packbolts)
+                    Misc.Pause(500)
+                    packcloth = Items.FindByID(0x1766,-1,Player.Backpack.Serial)
+                    Items.UseItemByID(0x0F9F,-1)
+                    Misc.Pause(500)
+                    Target.TargetExecute(packcloth)
+                    Misc.Pause(500)  
+                Misc.Pause(500)
+                Items.UseItem(0x42E88440)
+                Misc.Pause(500)
+                stockRegs()
+                Player.PathFindTo(6800, 3898, 17)
+                Misc.Pause(2500)
+                Items.UseItem(0x42EA55BA)
+                Misc.Pause(500)
+                storeValuables()
+                combineFrags()
+                repairCheck()
+                getStaff()
+                Misc.ScriptStop("FarmGod.py")
 
             if game.Name == "a corpser":
                 Misc.SendMessage("Corpser, ignoring.")
@@ -517,7 +628,13 @@ def killGame():
 
             Misc.SendMessage("Engaging " + str(game.Name))
             Player.Attack(game)
-            Misc.Pause(500)            
+            elapsed_time = time.time() - overall_start_time
+            Misc.Pause(500)
+            Misc.SendMessage(f"Elapsed time: {elapsed_time:.2f} seconds", 33)
+            # Check if the overall time limit has been exceeded
+            if time.time() - overall_start_time > overall_time_limit:
+                restart_function()
+                return  # Exit the current function to restart it            
 
             
 
@@ -532,6 +649,10 @@ def killGame():
                 if time.time() - engagement_start_time > 10:
                     Misc.SendMessage("Combat timeout, disengaging.")
                     break
+                    
+                if time.time() - overall_start_time > overall_time_limit:
+                    restart_function()
+                    return  # Exit the current function to restart it
 
 
                 if game.Hits < 13:
@@ -546,6 +667,9 @@ def killGame():
                 Misc.Pause(500)
             while Mobiles.FindBySerial(game.Serial):
                 # Check overall timer
+                elapsed_time = time.time() - overall_start_time
+                Misc.SendMessage(f"Elapsed time: {elapsed_time:.2f} seconds", 33)
+                Misc.Pause(500)
                 if time.time() - overall_start_time > overall_time_limit:
                     restart_function()
                     return  # Exit the current function to restart it
@@ -765,7 +889,7 @@ def invasionCheck():
             Misc.Pause(90000)
         worldSave()
         # List of possible locations
-        locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Moonglow Cemetary","Deceit","Mummies"]
+        locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Shades","Mummies","Moonglow Cemetary"] #
         # Shuffle the list of locations to create a randomized order
         random.shuffle(locations)
 
@@ -798,7 +922,7 @@ def invasionCheck():
 invasionCheck()
 
 # List of possible locations
-locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Moonglow Cemetary","Deceit","Lizards","Mummies"] #remove hot zones here
+locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Shades","Lizards","Mummies","Moonglow Cemetary"] #remove hot zones here 
 # Shuffle the list of locations to create a randomized order
 random.shuffle(locations)
 

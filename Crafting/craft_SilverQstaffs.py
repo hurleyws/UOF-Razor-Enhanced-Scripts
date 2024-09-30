@@ -38,14 +38,14 @@ toolTipsOn = True
 checkVanquishing = False
 checkSlayerWithDamageMod = False
 checkDeedability = False
-trashAllItems = False  # Just looking for XP? Mark true.
+trashAllItems = True  # Just looking for XP? Mark true.
 
 # Set wep choice below (comment out others)
 
-#weapToCraft = 'comp'
+weapToCraft = 'comp'
 #weapToCraft = 'bow'
 #weapToCraft = 'xbow'
-weapToCraft = 'qstaff'
+#weapToCraft = 'qstaff'
 #weapToCraft = 'club'
 
 ################ Items to keep Setup Section #########################
@@ -300,14 +300,14 @@ def checkMats():
                 if Items.BackpackCount(wood, -1) < 12 and Items.BackpackCount(logs, -1) < 12:
                     Misc.SendMessage('Out of Wood',33)
                     Gumps.CloseGump(949095101)
-                    Stop
+                    Misc.ScriptStop("craft_SilverQstaffs.py")
         else:
             if Items.BackpackCount(wood, -1) < 7 and Items.BackpackCount(logs, -1) < 7:
                 restockWood (woodHue)
                 if Items.BackpackCount(wood, -1) < 7 and Items.BackpackCount(logs, -1) < 7:
                     Misc.SendMessage('Out of Wood',33)
                     Gumps.CloseGump(949095101)
-                    Stop
+                    Misc.ScriptStop("craft_SilverQstaffs.py")
         
     elif carp:
         # check for tools 
@@ -320,7 +320,7 @@ def checkMats():
                     Misc.SendMessage('Out of Wood',33)
                     Gumps.CloseGump(949095101)
                     Misc.Beep()
-                    Stop
+                    Misc.ScriptStop("craft_SilverQstaffs.py")
             
 def craftTools():
     worldSave()

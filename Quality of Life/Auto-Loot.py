@@ -14,8 +14,37 @@ LOOTABLE_ITEMS = {
     0x1081: 'Horned Leather',
     0x14EC: 'Treasure Map',
     0x2831: 'Recipe',
-    0x09F1: 'Meat'
+    0x09F1: 'Meat',
+    0x14F0: 'Power Scroll',  # Power scroll ID
+    0x483B: 'Rune 1',       # Rune IDs
+    0x483E: 'Rune 2',
+    0x4841: 'Rune 3',
+    0x4844: 'Rune 4',
+    0x4847: 'Rune 5',
+    0x484A: 'Rune 6',
+    0x484D: 'Rune 7',
+    0x4850: 'Rune 8',
+    0x4853: 'Rune 9',
+    0x4856: 'Rune 10',
+    0x4859: 'Rune 11',
+    0x485C: 'Rune 12',
+    0x485F: 'Rune 13',
+    0x4862: 'Rune 14',
+    0x4865: 'Rune 15',
+    0x4868: 'Rune 16',
+    0x486B: 'Rune 17',
+    0x4871: 'Rune 18',
+    0x486E: 'Rune 19',
+    0x4874: 'Rune 20',
+    0x4877: 'Rune 21',
+    0x487A: 'Rune 22',
+    0x487D: 'Rune 23',
+    0x4880: 'Rune 24',
+    0x4883: 'Rune 25',
+    0x2260: 'Skill Scroll',  # Skill scroll ID
+    0x2AA3: 'Relic'           # Relic ID
 }
+
 
 LOOT_TOOLS = {
     'salvage_hook': 0x0EC4,  # Example item ID for salvage hook

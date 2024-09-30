@@ -43,24 +43,39 @@ def repairCheck():
             Misc.Pause(2000)
 
 def trashCheck():
+    weapon_keywords = ["mace", "axe", "katana", "halberd", "kryss"]
+
     for item in Player.Backpack.Contains:
+        if item.ItemID != 0x14EF:
+            continue  # Skip items that are not the specified type
+
         prop_list = Items.GetPropStringList(item)
 
-        # Keywords for weapons
-        weapon_keywords = ["mace", "axe", "katana", "halberd", "kryss"]
+        # Check for exceptional keyword
+        if "exceptional" not in str(prop_list):
+            Items.MoveOnGround(item, 1, Player.Position.X - 1, Player.Position.Y, Player.Position.Z)
+            continue  # Skip further checks if not exceptional
 
-        # Check for "bone" keyword
-#        if "bone" in str(prop_list):
-#            Player.HeadMessage(64, "Bone item! Tossing...")
-#            Misc.Pause(1000)
-#            Items.MoveOnGround(item, 1, Player.Position.X - 1, Player.Position.Y, Player.Position.Z)
-#            Misc.Pause(1000)
+        # Check for Q20, 4-piece cloths
+        is_specific_property = "20" in str(prop_list) and len(prop_list) == 11
+        is_correct_hue = item.Hue == 0x0483
 
-        # Check if property list length is >= 9 and contains a weapon keyword
-        if len(prop_list) >= 9 and any(keyword in prop.lower() for prop in prop_list for keyword in weapon_keywords) and item.ItemID == 0x14EF:
+        if is_specific_property and is_correct_hue:
+            Misc.Pause(1000)
+            Items.MoveOnGround(item, 1, Player.Position.X - 1, Player.Position.Y, Player.Position.Z)
+            Misc.Pause(1000)
+            continue  # Skip further checks if Q20 cloths
+
+        # Check for large weapon BOD
+        has_min_length = len(prop_list) >= 9
+        contains_weapon_keyword = any(keyword in prop.lower() for prop in prop_list for keyword in weapon_keywords)
+
+        if has_min_length and contains_weapon_keyword:
             Player.HeadMessage(64, "Large weapon BOD! Tossing...")
             Misc.Pause(1000)
             Items.MoveOnGround(item, 1, Player.Position.X - 1, Player.Position.Y, Player.Position.Z)
+
+
 
 
 def worldSave():
