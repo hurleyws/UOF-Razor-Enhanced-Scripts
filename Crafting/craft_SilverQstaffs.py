@@ -42,11 +42,11 @@ trashAllItems = True  # Just looking for XP? Mark true.
 
 # Set wep choice below (comment out others)
 
-weapToCraft = 'comp'
+#weapToCraft = 'comp'
 #weapToCraft = 'bow'
 #weapToCraft = 'xbow'
 #weapToCraft = 'qstaff'
-#weapToCraft = 'club'
+weapToCraft = 'club'
 
 ################ Items to keep Setup Section #########################
 

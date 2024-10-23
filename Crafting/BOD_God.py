@@ -1,6 +1,131 @@
 import time
 import random
 
+def unloadResources():
+    Items.UseItem(0x42E87E92)  # Artisan tool or container
+    Misc.Pause(500)
+    Items.UseItem(0x41132AE2)  # Wood pouch
+    Misc.Pause(500)
+    Items.UseItem(0x42EA4E24)  # Ingot pouch
+    Misc.Pause(500)
+    ingot_count_in_backpack = Items.BackpackCount(0x1BF2, 0x0000)
+    ingot_in_backpack = Items.FindByID(0x1BF2, 0x0000, Player.Backpack.Serial)
+    log_in_backpack = Items.FindByID(0x1BDD, 0x0000, Player.Backpack.Serial)
+    if log_in_backpack:
+        Items.Move(log_in_backpack, 0x41132AE2, -1)  # Move all logs from backpack back to storage
+        Misc.Pause(1000)
+    if ingot_in_backpack:
+        Items.Move(ingot_in_backpack, 0x42E87E92, ingot_count_in_backpack - 200)  # Move excess ingots back to storage
+        Misc.Pause(1000)
+
+def bodbagCheck():
+    Items.UseItem(0x42E87E92)
+    Misc.Pause(1000)
+    Items.UseItem(0x49A27509)
+    Misc.Pause(1000)
+    ironExcept = Items.ContainerCount(0x49A27509,0x14EF,0x044e)
+    Misc.Pause(500)
+    Misc.SendMessage("Iron Exceptional "+str(ironExcept))
+    Misc.Pause(1000)
+    if ironExcept > 9:
+        unloadResources()
+        Misc.ScriptRun("BOD_runIronExcept.py")
+    Misc.Pause(1000)
+    while Misc.ScriptStatus("BOD_runIronExcept.py"):
+        Misc.Pause(10000)
+    Misc.Pause(1000)
+    Items.UseItem(0x42369679)
+    Misc.Pause(1000)
+    PreshExcept = Items.ContainerCount(0x42369679,0x14EF,0x044e)
+    Misc.Pause(1000)
+    Misc.SendMessage("Precious Exceptionals "+str(PreshExcept))
+    if PreshExcept > 9:
+        unloadResources()
+        Misc.ScriptRun("BOD_runPreshExcept.py")
+    Misc.Pause(1000)
+    while Misc.ScriptStatus("BOD_runPreshExcept.py"):
+        Misc.Pause(10000)   
+    Misc.Pause(1000)
+    Items.UseItem(0x4194BF9C)
+    Misc.Pause(1000)
+    Tailor = Items.ContainerCount(0x4194BF9C,0x14EF,0x0483)
+    Misc.Pause(1000)
+    Misc.SendMessage("Tailor BODs "+str(Tailor))
+    if Tailor > 9:
+        unloadResources()
+        Misc.ScriptRun("BOD_runTailor.py")
+    Misc.Pause(1000)
+    while Misc.ScriptStatus("BOD_runTailor.py"):
+        Misc.Pause(10000) 
+    Misc.Pause(1000)
+    Player.ChatSay(64,"I will acquire additional BODs in 5 hours.")
+
+def trainArtisan():
+    Items.UseItem(0x42E87E92)  # Artisan tool or container
+    Misc.Pause(500)
+    Items.UseItem(0x41132AE2)  # Wood pouch
+    Misc.Pause(500)
+    Items.UseItem(0x42EA4E24)  # Ingot pouch
+    Misc.Pause(500)
+    
+    log_count_in_pouch = Items.ContainerCount(0x41132AE2, 0x1BDD, 0x0000)  # Count of logs in the wood pouch
+    ingot_count_in_pouch = Items.ContainerCount(0x42EA4E24, 0x1BF2, 0x0000)  # Count of ingots in the ingot pouch
+    
+    # First check to see if we have enough wood to start
+    if log_count_in_pouch > 1000:
+        ingot_count_in_backpack = Items.BackpackCount(0x1BF2, 0x0000)  # Count of ingots in the backpack
+        ingot_in_storage = Items.FindByID(0x1BF2, 0x0000, 0x42E87E92)  # Find ingots in storage (artisan tool or container)
+        
+        # Need to have at least 1000 logs in the backpack to start
+        log_count_in_backpack = Items.BackpackCount(0x1BDD, 0x0000)  # Count of logs in the backpack
+        log_in_storage = Items.FindByID(0x1BDD, 0x0000, 0x41132AE2)  # Find logs in storage (wood pouch)
+        
+        if log_count_in_backpack < 1000:
+            Items.Move(log_in_storage, Player.Backpack.Serial, 1000 - log_count_in_backpack)  # Move logs to backpack
+            Misc.Pause(1000)
+            
+        # Need at least 200 ingots for tools
+        if ingot_count_in_backpack < 200:
+            Items.Move(ingot_in_storage, Player.Backpack.Serial, 200 - ingot_count_in_backpack)  # Move ingots to backpack
+            Misc.Pause(1000)
+        
+        # If I have more than 200 ingots, reduce them to 200
+        if ingot_count_in_backpack > 200:
+            ingot_in_backpack = Items.FindByID(0x1BF2, 0x0000, Player.Backpack.Serial)  # Find ingots in backpack
+            Items.Move(ingot_in_backpack, 0x42E87E92, ingot_count_in_backpack - 200)  # Move excess ingots back to storage
+            Misc.Pause(1000)
+        
+        # The two lines below are necessary since you want to check if you have enough logs and find logs in storage earlier.
+        log_count_in_backpack = Items.BackpackCount(0x1BDD, 0x0000)  # Re-check log count in backpack (after any potential moves)
+        log_in_storage = Items.FindByID(0x1BDD, 0x0000, 0x41132AE2)  # Re-find log storage in case of changes (if needed for future moves)
+        
+        Player.ChatSay("[recall Trainer")  # Recall to the trainer location
+        Misc.Pause(3000)
+        Misc.ScriptRun("trainArtisan.py")  # Restart the training script
+    
+    # Not enough wood, checking to see if enough ingots
+    elif ingot_count_in_pouch > 2500:
+        log_in_backpack = Items.FindByID(0x1BDD, 0x0000, Player.Backpack.Serial)  # Find logs in backpack
+        log_in_storage = Items.FindByID(0x1BDD, 0x0000, 0x41132AE2)  # Find logs in storage (wood pouch)
+        
+        # Enough ingots, putting away any excess logs in backpack
+        if log_in_backpack:
+            Items.Move(log_in_backpack, 0x41132AE2, -1)  # Move all logs from backpack back to storage
+            Misc.Pause(1000)
+        
+        # Checking ingot counts in the backpack
+        ingot_count_in_backpack = Items.BackpackCount(0x1BF2, 0x0000)  # Count ingots in backpack
+        ingot_in_storage = Items.FindByID(0x1BF2, 0x0000, 0x42EA4E24)  # Find ingots in storage (ingot pouch)
+        
+        # Need 2000 ingots to start, moving that amount to backpack
+        if ingot_count_in_backpack < 2000:
+            Items.Move(ingot_in_storage, Player.Backpack.Serial, 2000 - ingot_count_in_backpack)  # Move enough ingots to reach 2000 in backpack
+            Misc.Pause(1000)
+        
+        Misc.ScriptRun("daggerTrain_Imbuologist.py")  # Run the imbuologist script
+
+        
+
 def repairCheck():
     repairPouch = Items.FindBySerial(0x41547DA9)
     
@@ -199,6 +324,7 @@ def bod_run():
         Player.PathFindTo(6804, 3897, 17)
         Misc.Pause(3000)
         Player.Run("North")
+        Misc.Pause(500)
     elif Player.Name == 'Tool Time':
         Player.PathFindTo(6800, 3892, 17)
         Misc.Pause(5000)
@@ -252,26 +378,7 @@ def bod_run():
             time.sleep(60*sleepTime)
             Journal.Clear()
         elif Player.Name == "Realtree":
-#            Items.UseItem(0x42E87E92)
-#            Misc.Pause(500)
-#            Items.UseItem(0x41132AE2)
-#            Misc.Pause(500)
-#            logs = Items.ContainerCount(0x41132AE2,0x1BDD,0x0000)
-#            if logs > 30000:
-#                packingots = Items.BackpackCount(0x1BF2,0x0000)
-#                ingotstorage = Items.FindByID(0x1BF2,0x0000,0x42E87E92)
-#                if packingots < 50:
-#                    Items.Move(ingotstorage,Player.Backpack.Serial,200-packingots)
-#                    Misc.Pause(1000)
-#                packlogs = Items.BackpackCount(0x1BDD,0x0000)
-#                logstorage = Items.FindByID(0x1BDD,0x0000,0x41132AE2)
-#                if packlogs < 1000:
-#                    Items.Move(logstorage,Player.Backpack.Serial,1000-packlogs)
-#                    Misc.Pause(1000)
-#                Player.ChatSay("[recall Trainer")
-#                Misc.Pause(3000)
-#                Misc.ScriptRun("trainArtisan.py")
-#            Misc.ScriptRun("train_Empower.py")
+            trainArtisan()
             time.sleep(60*sleepTime)
             Journal.Clear()
         
@@ -287,82 +394,27 @@ while True:
     bod_run()
     Misc.Pause(500)
     if Player.Name == 'Realtree':
-        Items.UseItem(0x42E87E92)
-        Misc.Pause(1000)
-        Items.UseItem(0x49A27509)
-        Misc.Pause(1000)
-        ironExcept = Items.ContainerCount(0x49A27509,0x14EF,0x044e)
-        Misc.Pause(500)
-        Misc.SendMessage("Iron Exceptional "+str(ironExcept))
-        Misc.Pause(1000)
-        if ironExcept > 9:
-            Misc.ScriptRun("BOD_runIronExcept.py")
-        Misc.Pause(1000)
-        while Misc.ScriptStatus("BOD_runIronExcept.py"):
-            Misc.Pause(10000)
-        Misc.Pause(1000)
-        Items.UseItem(0x42369679)
-        Misc.Pause(1000)
-        PreshExcept = Items.ContainerCount(0x42369679,0x14EF,0x044e)
-        Misc.Pause(1000)
-        Misc.SendMessage("Precious Exceptionals "+str(PreshExcept))
-        if PreshExcept > 9:
-            Misc.ScriptRun("BOD_runPreshExcept.py")
-        Misc.Pause(1000)
-        while Misc.ScriptStatus("BOD_runPreshExcept.py"):
-            Misc.Pause(10000)   
-        Misc.Pause(1000)
-        Items.UseItem(0x4194BF9C)
-        Misc.Pause(1000)
-        Tailor = Items.ContainerCount(0x4194BF9C,0x14EF,0x0483)
-        Misc.Pause(1000)
-        Misc.SendMessage("Tailor BODs "+str(Tailor))
-        if Tailor > 9:
-            Misc.ScriptRun("BOD_runTailor.py")
-        Misc.Pause(1000)
-        while Misc.ScriptStatus("BOD_runTailor.py"):
-            Misc.Pause(10000) 
-        Misc.Pause(1000)
-        Player.ChatSay(64,"I will acquire additional BODs in 5 hours.")
+        bodbagCheck()
         repairCheck()
-#        Misc.ScriptRun("train_Empower.py")
+        trainArtisan()
         time.sleep(5*60*60)
-#        Items.UseItem(0x42E87E92)
-#        Misc.Pause(500)
-#        Items.UseItem(0x41132AE2)
-#        Misc.Pause(500)
-#        logs = Items.ContainerCount(0x41132AE2,0x1BDD,0x0000)
-#        if logs > 30000:
-#            packingots = Items.BackpackCount(0x1BF2,0x0000)
-#            ingotstorage = Items.FindByID(0x1BF2,0x0000,0x42E87E92)
-#            if packingots < 50:
-#                Items.Move(ingotstorage,Player.Backpack.Serial,200-packingots)
-#                Misc.Pause(1000)
-#            packlogs = Items.BackpackCount(0x1BDD,0x0000)
-#            logstorage = Items.FindByID(0x1BDD,0x0000,0x41132AE2)
-#            if packlogs < 1000:
-#                Items.Move(logstorage,Player.Backpack.Serial,1000-packlogs)
-#                Misc.Pause(1000)
-#            Player.ChatSay("[recall Trainer")
-#            Misc.Pause(3000)
-#            Misc.ScriptRun("trainArtisan.py")
-#            time.sleep(5*60*60)
-#        else:
-#            time.sleep(5*60*60) 
 
     elif Player.Name == 'ToolmanTailor':
         Misc.Pause(2000)
         for x in range(5):
             Misc.ScriptRun("FarmGod.py")
             time.sleep(60*60) 
+            
     elif Player.Name == 'ImaTool':
         Misc.Pause(5000)
         for x in range(0,5):
             Misc.ScriptRun("treasure_God.py")
             time.sleep(60*60)
+            
     elif Player.Name == 'Tool Time':
         Misc.ScriptRun("trashPanda.py")
         time.sleep((5 * 3600) + (5 * 60))#5 hours and 5 minutes
+        
     else:
         Player.ChatSay(64,"I will acquire additional BODs in 5 hours.")
         time.sleep(5*60*60)

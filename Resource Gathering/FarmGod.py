@@ -60,7 +60,7 @@ loot_list.extend(bones)
 loot_list.extend(rune_ids)
 loot_list.extend(regs)
 
-fragIDs = [0x2244,0x2243,0x2242,0x2241,0x223D,0x223C]
+fragIDs = [0x2244,0x2243,0x2242,0x2241,0x223D,0x223C,0x2244]
 
 def combineFrags():
     # Step 1: Search the players backpack for a fragment
@@ -272,25 +272,19 @@ def stockRegs():
     root = Items.BackpackCount(0x0F86,-1)
     moss = Items.BackpackCount(0x0F7B,-1)
     pearl = Items.BackpackCount(0x0F7A,-1)
-    picks = Items.BackpackCount(0x14FC,-1)
+    bandages = Items.BackpackCount(0x0E21,-1)
     shade = Items.FindByID(0x0F88,-1,Player.Backpack.Serial)
     garlic = Items.FindByID(0x0F84,-1,Player.Backpack.Serial)
     ginseng = Items.FindByID(0x0F85,-1,Player.Backpack.Serial)
     ash = Items.FindByID(0x0F8C,-1,Player.Backpack.Serial)
     silk = Items.FindByID(0x0F8D,-1,Player.Backpack.Serial)
     gold = Items.FindByID(0x0EED,-1,Player.Backpack.Serial)
-    scrolls = Items.FindByID(0x0EF3,-1,Player.Backpack.Serial)
-    logs = Items.FindByID(0x1BDD,-1,Player.Backpack.Serial)
   
     Items.UseItem(0x42E88440)
     Misc.Pause(500)
     Items.UseItem(0x42E87E92)
     Misc.Pause(500)
     
-    
-    if picks < 15:
-        Items.Move(Items.FindByID(0x14FC,-1,0x42E88440),Player.Backpack.Serial,15-picks)
-        Misc.Pause(1000)  
 
     if root < 15:
         Items.Move(Items.FindByID(0x0F86,-1,0x42E88440),Player.Backpack.Serial,15-root)
@@ -319,6 +313,9 @@ def stockRegs():
     else:
         Misc.Pause(200)
         
+    if bandages > 200:
+        Items.Move(Items.FindByID(0x0E21,-1,Player.Backpack.Serial),0x42E87E92,bandages-200)
+        Misc.Pause(1000)        
     if silk:
         Items.Move(silk,0x42E88440,-1)
         Misc.Pause(1000)
@@ -335,11 +332,9 @@ def stockRegs():
         Items.Move(shade,0x42E88440,-1)
         Misc.Pause(1000)
     if gold:
-        Items.Move(gold,0x42E87E92,-1)
+        Items.Move(gold,0x42E87E92,-1,148, 84)
         Misc.Pause(1000)
-    if scrolls:
-        Items.Move(scrolls,0x42E87E92,-1)
-        Misc.Pause(1000)
+
     
     
 
@@ -642,11 +637,13 @@ def killGame():
             while Player.DistanceTo(game) > 1:
                 # Check overall timer
                 if time.time() - overall_start_time > overall_time_limit:
-                    restart_function()
-                    return  # Exit the current function to restart it
+                    goHome()
+                    Player.ChatSay(64,"Likely provo trap found")
+                    Misc.Pause(500)
+                    Misc.ScriptStop("FarmGod.py")  # Exit the current function to restart it
 
                 # Check engagement timer
-                if time.time() - engagement_start_time > 10:
+                if time.time() - engagement_start_time > 20:
                     Misc.SendMessage("Combat timeout, disengaging.")
                     break
                     
@@ -889,13 +886,13 @@ def invasionCheck():
             Misc.Pause(90000)
         worldSave()
         # List of possible locations
-        locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Shades","Mummies","Moonglow Cemetary"] #
+        locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Deceit","Mummies","Moonglow Cemetary"] #
         # Shuffle the list of locations to create a randomized order
         random.shuffle(locations)
 
         for location in locations:
             attempt_recall(location)
-            Misc.Pause(2500)
+            Misc.Pause(500)
             killGame()
             checkWeight()
             worldSave()
@@ -922,7 +919,7 @@ def invasionCheck():
 invasionCheck()
 
 # List of possible locations
-locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Shades","Lizards","Mummies","Moonglow Cemetary"] #remove hot zones here 
+locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Deceit","Lizards","Mummies","Moonglow Cemetary"] #remove hot zones here 
 # Shuffle the list of locations to create a randomized order
 random.shuffle(locations)
 

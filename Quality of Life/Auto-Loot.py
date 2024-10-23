@@ -6,6 +6,7 @@ CORPSE_ID = 0x2006
 GOLD_ID = 0x0EED  # Gold Item ID
 LOOTABLE_ITEMS = {
     0x26B4: 'Hide',
+    0x1767: 'Cloth',
     0x0EED: 'Gold',
     0x0DCA: 'Net',
     0x099F: 'SOS',

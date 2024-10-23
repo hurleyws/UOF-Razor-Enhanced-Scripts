@@ -28,14 +28,35 @@ gem_ids = [0x0F21,0x0F16,0x0F19,0x0F13,0x0F10,0x0F25,0x0F2D,0x0F15,0x0F26]
 
 
 def worldSave():
-    if (Journal.SearchByType('The world will save in 1 minute.', 'System') or Journal.SearchByType('pause', 'Regular')):
+    manualPause = False
+    
+    # Check for world save or manual pause
+    if Journal.SearchByType('The world will save in 1 minute.', 'System') or Journal.SearchByType('pause', 'Regular'):
         Misc.Pause(700)
-        Misc.SendMessage('Pausing for world save or player-called break.', 33)
-        while (not Journal.SearchByType('World save complete.', 'System') and not Journal.SearchByType('play', 'Regular')):
+        
+        # If "pause" is typed, set manualPause flag
+        if Journal.SearchByType('pause', 'Regular'):
+            manualPause = True
+            Misc.SendMessage('Manual pause initiated.', 33)
+        else:
+            Misc.SendMessage('Pausing for world save.', 33)
+        
+        # Loop until a resume condition occurs
+        while True:
             Misc.Pause(1000)
+
+            # If world save finishes and were NOT in manual pause, resume
+            if not manualPause and Journal.SearchByType('World save complete.', 'System'):
+                break
+
+            # If "play" is typed during manual pause, resume
+            if manualPause and Journal.SearchByType('play', 'Regular'):
+                break
+
         Misc.Pause(2500)
-        Misc.SendMessage('Continuing run', 33)
+        Misc.SendMessage('Continuing run.', 33)
         Misc.Pause(700)
+
     Journal.Clear()
     
 def stowegems():

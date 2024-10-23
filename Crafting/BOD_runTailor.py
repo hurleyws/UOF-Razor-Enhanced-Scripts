@@ -50,6 +50,13 @@ if ingotcount < 50:
         Misc.ScriptStop("BOD_runTailor.py")
 
 worldSave()   
+
+logs = Items.FindByID(0x1BDD,-1,Player.Backpack.Serial)
+if logs:
+    Items.UseItem(0x42E87E92)
+    Misc.Pause(500)
+    Items.Move(logs,0x41132AE2,-1)
+    Misc.Pause(1000)
     
 Misc.ScriptRun("BOD_demigodTailor.py")
 
