@@ -26,27 +26,31 @@ useIDWands = True # true to use ID wands to ID magic items as
                   # Wands must be in backpack, not in bag in pack
 
 # update with your beetles serial to move good weps to
-beetle = 0x00121BEB
+beetle = 0x004FEA0E
 
 #inspect an item in the bag of your beetle, copy root container serial here. used to restock wood
-beetleContainer = 0x417EFFFD
+beetleContainer = 0x4B0936DA
+
+#bonded = 10, non-bonded = 9
+bondIndex = 10
 
 # turn to true if client has tool tips enabled, more reliable
 toolTipsOn = True
 
 #Settings
 checkVanquishing = False
-checkSlayerWithDamageMod = False
-checkDeedability = False
-trashAllItems = True  # Just looking for XP? Mark true.
+checkSlayerWithDamageMod = False #Only slayers with damage mod will be kept
+checkDeedability = False #All deedable weapons will be kept
+trashAllItems = False  # Just looking for XP? Mark true.
+slayersOnly = True #will only ID slayer weapons (magical props alone will not get ID)
 
 # Set wep choice below (comment out others)
 
 #weapToCraft = 'comp'
 #weapToCraft = 'bow'
 #weapToCraft = 'xbow'
-#weapToCraft = 'qstaff'
-weapToCraft = 'club'
+weapToCraft = 'qstaff'
+#weapToCraft = 'club'
 
 ################ Items to keep Setup Section #########################
 
@@ -240,6 +244,8 @@ def moveToBeetle(item):
     if Player.Mount:
         Mobiles.UseMobile(self)
         Misc.Pause(dragTime)
+        Player.ChatSay("All follow me")
+        Misc.Pause(500)
     Items.Move(item, beetle, 1)
     Misc.Pause(dragTime)
     Mobiles.UseMobile(beetle)
@@ -250,10 +256,12 @@ def restockWood( color ):
     if Player.Mount:
         Mobiles.UseMobile(self)
         Misc.Pause(dragTime)
+        Player.ChatSay("All follow me")
+        Misc.Pause(500)
         Mobiles.SingleClick(beetle)
         Misc.WaitForContext(beetle, 1500)
         if Player.Visible:
-            Misc.ContextReply(beetle, 10)
+            Misc.ContextReply(beetle, bondIndex)
         else:
             Misc.ContextReply(beetle, 0)
         Misc.Pause(dragTime)
@@ -574,13 +582,21 @@ def wepCheck():
     worldSave()
     craftedItem = FindItem( craftWepID , Player.Backpack )
     if toolTipsOn:
-        if Journal.SearchByType('You have successfully crafted a slayer', 'System'):
-            idItemToolTips(craftedItem)
-        elif Journal.SearchByType('Your material and skill have added magical properties to this weapon.', 'System'):
-            idItemToolTips(craftedItem)
+        if slayersOnly:
+            if Journal.SearchByType('You have successfully crafted a slayer', 'System'):
+                idItemToolTips(craftedItem)
+            else:
+                Misc.Pause(500)
+                trashItem(craftedItem)
         else:
-            Misc.Pause(500)
-            trashItem(craftedItem)
+            if Journal.SearchByType('You have successfully crafted a slayer', 'System'):
+                idItemToolTips(craftedItem)
+            elif Journal.SearchByType('Your material and skill have added magical properties to this weapon.', 'System'):
+                idItemToolTips(craftedItem)
+            else:
+                Misc.Pause(500)
+                trashItem(craftedItem)
+                
     else:
         Player.HeadMessage(64,"Non-tool tips")
         if Journal.SearchByType('You have successfully crafted a slayer', 'System'):

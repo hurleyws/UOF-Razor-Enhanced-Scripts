@@ -43,7 +43,7 @@ LOOTABLE_ITEMS = {
     0x4880: 'Rune 24',
     0x4883: 'Rune 25',
     0x2260: 'Skill Scroll',  # Skill scroll ID
-    0x2AA3: 'Relic'           # Relic ID
+    0x2AA2: 'Relic'           # Relic ID
 }
 
 

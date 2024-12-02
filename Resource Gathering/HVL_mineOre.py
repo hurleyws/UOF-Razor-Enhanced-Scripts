@@ -1,15 +1,23 @@
 #standard imports
 import sys
 from System.Collections.Generic import List
+from System import Int32 as int
 
 #################
 #PROSPECTING???##
 #SET TO TRUE#####
 prospect = False
 
+#################
+#BONDED BEETLE??##
+#10=bonded, 9=unbonded#####
+metaSmelting = True
+oreColor = [0x0000,0x0415,0x0455,0x045f,0x06d8]
+bondIndex = 10
 
-beetle = 0x002B1782 # watches = 0x000CDBE0
-beetlepack = 0x467F1254 # watches = 0x423495E0
+
+beetle = 0x005A0EB9 # watches = 0x000CDBE0
+beetlepack = 0x4C4CF7DB # watches = 0x423495E0
 door = 0x402F1C41
 ingotbox = Items.FindBySerial(0x40FA9D34)
 
@@ -88,11 +96,23 @@ def toolCheck():
                 Misc.Pause(1000)
 
 def smeltAll():
-    Mobiles.UseMobile(Player.Serial) 
-    Misc.Pause(1000)
+    if Player.Mount:
+        Mobiles.UseMobile(Player.Serial) 
+        Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10) #bonded = 10, non-bonded = 9
+    Misc.ContextReply(beetle, bondIndex) #bonded = 10, non-bonded = 9
     Misc.Pause(2000)
+    ore = Items.FindByID(0x19B9, -1, Player.Backpack.Serial, True, True)
+    while ore:
+        Items.Move(ore, beetle, -1)
+        Misc.Pause(1000)
+        ore = Items.FindByID(0x19B9, -1, Player.Backpack.Serial, True, True)
+        # Move all granite (ID: 0x1779) to the beetle
+    granite = Items.FindByID(0x1779, -1, Player.Backpack.Serial, True, True)
+    while granite:
+        Items.Move(granite, beetle, -1)
+        Misc.Pause(1000)
+        granite = Items.FindByID(0x1779, -1, Player.Backpack.Serial, True, True)
     ore = Items.FindByID(0x19B9,-1,beetlepack)
     while ore:
         Items.UseItem(ore)
@@ -114,6 +134,54 @@ def smeltAll():
         Misc.Pause(1000)
         granite = Items.FindByID(0x1779,-1,Player.Backpack.Serial)    
 
+# Function to move ore from a container (and its subcontainers) to a target
+def moveRocks(container_serial, target_serial):
+    # Function to recursively find and move ore
+    def findAndMoveOre(container_serial):
+        # Get all items in the container
+        items = Items.FindAllByID(0x19B9,-1,container_serial,2,False)
+
+        for item in items:
+            # Check if the item is ore and matches the desired hues
+            if item.ItemID == 0x19B9 and item.Hue in oreColor:
+                # Move the item to the target
+                Items.Move(item, target_serial, -1)
+                Misc.Pause(1000)  # Pause to ensure movement completes
+
+    # Start finding and moving ore from the container
+    findAndMoveOre(container_serial)
+
+# Main function to use the smelter
+def useSmelter():
+    # Ensure player dismounts if mounted (e.g., beetlepack is a mount)
+    if Player.Mount:
+        Mobiles.UseMobile(Player.Serial)
+        Misc.Pause(1000)
+        
+    # Wait for the context (beetle or other mobile) to be available.
+    Misc.WaitForContext(beetle, 10000)
+
+    # Bond the beetle (10 if bonded, 9 if non-bonded)
+    Misc.ContextReply(beetle, bondIndex)
+    Misc.Pause(2000)
+
+
+    # Define the smelters serial
+    smelter_serial = 0x403DC417  # Replace with the actual smelter serial
+
+
+
+    # Move ore from the player's backpack to the smelter
+    moveRocks(Player.Backpack.Serial, smelter_serial)
+
+    # Move ore from the beetlepack to the smelter
+    moveRocks(beetlepack, smelter_serial)
+
+    # Pause briefly after smelting
+    Misc.Pause(500)
+
+
+    
 def goInside():
     Player.PathFindTo(2117, 359, 7)
     Misc.Pause(4500)
@@ -123,6 +191,10 @@ def goInside():
     if door.ItemID == 0x067D:
         Items.UseItem(door)
         Misc.Pause(500)
+    if metaSmelting:
+        Player.PathFindTo(2126,357,4)
+        Misc.Pause(2000)
+        useSmelter()
     Player.PathFindTo(2127, 355, 7)
     Misc.Pause(2000)
 
@@ -204,7 +276,7 @@ while True:
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2198,300,0)
@@ -213,7 +285,7 @@ while True:
     Player.PathFindTo(2189, 304, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2189,303,0)
@@ -222,7 +294,7 @@ while True:
     Player.PathFindTo(2174, 314, 0)
     Misc.Pause(5000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2174,313,0)
@@ -231,7 +303,7 @@ while True:
     Player.PathFindTo(2168, 316, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     Misc.Pause(500)
     worldSave()
     Journal.Clear()
@@ -241,7 +313,7 @@ while True:
     Player.PathFindTo(2163, 316, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2163, 316, 0)
     worldSave()
@@ -268,6 +340,8 @@ while True:
     Misc.Pause(500)
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
+    Player.PathFindTo(2145,343,0)
+    Misc.Pause(3000)
     Player.PathFindTo(2146,320,0)
     Misc.Pause(6000)
     Player.PathFindTo(2149,302,0)
@@ -275,7 +349,7 @@ while True:
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2151,302,4)
@@ -284,7 +358,7 @@ while True:
     Player.PathFindTo(2152, 307, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2153,307,1)
     worldSave()
@@ -295,7 +369,7 @@ while True:
     Player.PathFindTo(2154, 310, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2154,311,6)
@@ -306,7 +380,7 @@ while True:
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2149,310,6)
     worldSave()
@@ -317,7 +391,7 @@ while True:
     Player.PathFindTo(2147, 317, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2147,316,0)
     worldSave()
@@ -353,7 +427,7 @@ while True:
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2123,310,14)
     worldSave()
@@ -364,7 +438,7 @@ while True:
     Player.PathFindTo(2124, 316, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2122,316,6)
@@ -373,7 +447,7 @@ while True:
     Player.PathFindTo(2124, 317, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2123,315,0)
@@ -382,7 +456,7 @@ while True:
     Player.PathFindTo(2125, 319, 0)
     Misc.Pause(4700)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2124,319,0)
@@ -391,7 +465,7 @@ while True:
     Player.PathFindTo(2136, 314, 0)
     Misc.Pause(6000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2136,312,0)
     worldSave()
@@ -422,7 +496,7 @@ while True:
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2124,323,0)
@@ -431,7 +505,7 @@ while True:
     Player.PathFindTo(2124, 330, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2125,331,4)
     worldSave()
@@ -442,7 +516,7 @@ while True:
     Player.PathFindTo(2122, 329, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2121,329,0)
@@ -451,7 +525,7 @@ while True:
     Player.PathFindTo(2116, 333, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2117,332,8)
@@ -460,7 +534,7 @@ while True:
     Player.PathFindTo(2126, 337, 0)
     Misc.Pause(4000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2125, 337 ,0 ,6011)
@@ -489,7 +563,7 @@ while True:
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2081, 362 ,0 ,6008)
@@ -498,7 +572,7 @@ while True:
     Player.PathFindTo(2082, 356, 0)
     Misc.Pause(4000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2081,356,0)
@@ -507,7 +581,7 @@ while True:
     Player.PathFindTo(2091, 346, 0)
     Misc.Pause(4000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2090,346,0)
@@ -516,7 +590,7 @@ while True:
     Player.PathFindTo(2095, 343, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2095,342,0)
@@ -525,7 +599,7 @@ while True:
     Player.PathFindTo(2108, 337, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2106,337,7)
@@ -553,14 +627,16 @@ while True:
     Player.PathFindTo(2106,375,0)
     Misc.Pause(4000)
     #REFRESH WEST HOUSE
+    Player.PathFindTo(2082,390,0)
+    Misc.Pause(4000)
     Player.PathFindTo(2071,393,0)
-    Misc.Pause(6000)
+    Misc.Pause(2000)
     Player.PathFindTo(2050,389,0)
     Misc.Pause(4000)
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2050, 388 ,0 ,6003)
     worldSave()
@@ -571,7 +647,7 @@ while True:
     Player.PathFindTo(2064,398,0)
     Misc.Pause(5000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2063, 400 ,0 ,6012)
     worldSave()
@@ -582,7 +658,7 @@ while True:
     Player.PathFindTo(2069, 380, 0)
     Misc.Pause(4000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2068, 380 ,0)
     worldSave()
@@ -593,7 +669,7 @@ while True:
     Player.PathFindTo(2074, 372, 0)
     Misc.Pause(3000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2073, 373 ,0 ,6012)
@@ -602,7 +678,7 @@ while True:
     Player.PathFindTo(2073, 368, 0)
     Misc.Pause(3000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2072,368,0)
@@ -638,7 +714,7 @@ while True:
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2204,301,4)
     worldSave()
@@ -649,7 +725,7 @@ while True:
     Player.PathFindTo(2202, 296, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2202,297,0,6003)
     worldSave()
@@ -660,7 +736,7 @@ while True:
     Player.PathFindTo(2205, 292, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2205,291,0)
     worldSave()
@@ -671,7 +747,7 @@ while True:
     Player.PathFindTo(2207, 285, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     if prospect:
         prospectLocation(2207,285,0)
     worldSave()
@@ -682,7 +758,7 @@ while True:
     Player.PathFindTo(2175, 300, 0)
     Misc.Pause(8000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2175,301,5)   
@@ -714,7 +790,7 @@ while True:
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     Misc.Pause(500)
     worldSave()
     Journal.Clear()
@@ -724,7 +800,7 @@ while True:
     Player.PathFindTo(2099,341,7)
     Misc.Pause(3000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     Misc.Pause(500)
     worldSave()
     Journal.Clear()
@@ -734,7 +810,7 @@ while True:
     Player.PathFindTo(2088,349,7)
     Misc.Pause(4000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     Misc.Pause(500)
     worldSave()
     Journal.Clear()
@@ -744,7 +820,7 @@ while True:
     Player.PathFindTo(2083,353,7)
     Misc.Pause(3000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     Misc.Pause(500)
     worldSave()
     Journal.Clear()
@@ -754,7 +830,7 @@ while True:
     Player.PathFindTo(2078,359,7)
     Misc.Pause(3000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2077, 360 ,0)
@@ -782,7 +858,7 @@ while True:
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     Misc.Pause(500)
     worldSave()
     Journal.Clear()
@@ -792,7 +868,7 @@ while True:
     Player.PathFindTo(2099,363,7)
     Misc.Pause(5000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     Misc.Pause(500)
     worldSave()
     Journal.Clear()
@@ -802,7 +878,7 @@ while True:
     Player.PathFindTo(2097,361,7)
     Misc.Pause(2500)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     Misc.Pause(500)
     worldSave()
     Journal.Clear()
@@ -813,7 +889,7 @@ while True:
     Player.PathFindTo(2108, 337, 7)
     Misc.Pause(6000)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     Misc.Pause(500)
     worldSave()
     Journal.Clear()
@@ -823,7 +899,7 @@ while True:
     Player.PathFindTo(2111,336,7)
     Misc.Pause(2500)
     Misc.WaitForContext(beetle, 10000) 
-    Misc.ContextReply(beetle, 10)
+    Misc.ContextReply(beetle, bondIndex)
     worldSave()
     Journal.Clear()
     mineAtLocation(2112, 335 ,6)

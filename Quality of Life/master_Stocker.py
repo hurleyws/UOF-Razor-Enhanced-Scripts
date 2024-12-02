@@ -5,19 +5,23 @@ import re
 restock_requirements = {
     "Alyer Base": {
         "items": {"root": 50, "moss": 50, "pearl": 50, "ash": 50, "garlic": 50, "shade": 50, "gins": 50, "silk": 50, "bandages": 100, "emergency_charges": 10},
-        "runebook_serial": 0x4106CD0C  # Replace
+        "runebook_serial": 0x4106CD0C,  # Replace
+        "index": 5  # Replace with the correct index for Alyer Base
     },
     "Hurlpea": {
-        "items": {"root": 100, "moss": 100, "pearl": 100, "ash": 30, "garlic": 30, "shade": 100, "gins": 30, "silk": 50, "bandages": 0, "emergency_charges": 10},
-        "runebook_serial": 0x4106C9C2  # Replace
+        "items": {"root": 100, "moss": 100, "pearl": 100, "ash": 30, "garlic": 30, "shade": 100, "gins": 30, "silk": 50, "bandages": 0, "emergency_charges": 100},
+        "runebook_serial": 0x476C14DB,  # Replace
+        "index": 6  # Replace with the correct index for Hurlpea
     },
     "Realtree": {
         "items": {"root": 50, "moss": 50, "pearl": 50, "ash": 30, "garlic": 30, "shade": 30, "gins": 30, "silk": 30, "bandages": 0, "emergency_charges": 10},
-        "runebook_serial": 0x41769B12  # Replace 
+        "runebook_serial": 0x41769B12,  # Replace
+        "index": 4  # Replace with the correct index for Realtree
     },
     "Servant": {
         "items": {"root": 50, "moss": 50, "pearl": 50, "ash": 30, "garlic": 30, "shade": 30, "gins": 30, "silk": 30, "bandages": 0, "emergency_charges": 10},
-        "runebook_serial": 0x4297635A  # Replace 
+        "runebook_serial": 0x4297635A,
+        "index": 6  # Replace with the correct index for Servant
     },
     # Add other characters and their needs here
 }
@@ -113,16 +117,21 @@ character_name = Player.Name
 if character_name in restock_requirements:
     character_config = restock_requirements[character_name]
     runebook_serial = character_config["runebook_serial"]
+    index = character_config["index"]  # Get the correct index for this character
+    
     runebook = Items.FindBySerial(runebook_serial)
-    rbcharges = Items.GetPropStringByIndex(runebook,5)
+    rbcharges = Items.GetPropStringByIndex(runebook, index)  # Use the character-specific index
+    Misc.SendMessage(rbcharges)
+    
     parts = rbcharges.split()  # parts = ["Charges", "10/10"]
     charge_info = parts[1]  # charge_info = "10/10"
     numerator, _ = charge_info.split('/')  # numerator = "10"
     emergency_charges = int(numerator)
-    # Current quantities for each item
-    current_quantities = {"root": root, "moss": moss, "pearl": pearl, "ash": ash, "garlic": garlic, "shade": shade, "gins": gins, "silk": silk, "bandages": bandages, "emergency_charges": emergency_charges}
+    
+    # Update current quantities for each item
+    current_quantities["emergency_charges"] = emergency_charges
 
-
+    # Loop through each item and restock as needed
     for item_name, desired_quantity in character_config["items"].items():
         item_id = item_ids[item_name]
         restock_item(item_id, current_quantities[item_name], desired_quantity, regchest.Serial, Player.Backpack.Serial, runebook_serial)

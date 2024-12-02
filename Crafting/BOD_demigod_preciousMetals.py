@@ -229,7 +229,7 @@ def craft_items():
                 Player.HeadMessage(64, 'SHITTY!')
                 Misc.Pause(500)
                 target_item = Items.FindByID(itemid_dict.get(craft),-1,Player.Backpack.Serial,-1)
-                Items.Move(target_item,0x42E90238, 1, 132, 87)
+                Items.Move(target_item,0x422BDF75, 1, 132, 87)
                 Misc.Pause(500)
                 errorCheck()
             else:

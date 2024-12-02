@@ -39,24 +39,61 @@ def worldSave():
 # Re-Tooling Process
 def reTool():
     tool_needed = 2  # Number of tools to keep in backpack
+    Misc.SendMessage("Checking tool counts.")
+    Misc.Pause(500)
 
     # Re-stock smith hammers if below required count
     if Items.ContainerCount(Player.Backpack.Serial, 0x13E3, -1) < tool_needed:
+        Misc.SendMessage("Making new smith hammer.")
+        Misc.Pause(500)
         while Items.ContainerCount(Player.Backpack.Serial, 0x13E3, -1) < tool_needed:
             Items.UseItemByID(0x1EB8, 0x0000)  # Open smith tools container
             Misc.Pause(500)
             Gumps.WaitForGump(949095101, 10000)
+            Gumps.SendAction(949095101, 8)  # Select tools menu
+            Gumps.WaitForGump(949095101, 10000)
+            Misc.Pause(500)
             Gumps.SendAction(949095101, 93)  # Select Smith Hammer
             Misc.Pause(2000)
+        # Make a single dagger to make it last craft
+        Items.UseItemByID(0x13E3, 0x0000)
+        Misc.Pause(500)
+        Misc.SendMessage("Using smith hammer.")
+        Misc.Pause(500)
+        Gumps.WaitForGump(949095101, 10000)
+        Gumps.SendAction(949095101, 36)
+        Misc.SendMessage("Slecting blade menu.")
+        Misc.Pause(500)
+        # Craft option
+        Gumps.WaitForGump(949095101, 10000)
+        Gumps.SendAction(949095101, 16)
+        Misc.SendMessage("Crafting dagger.")
+        Misc.Pause(2000)
 
     # Re-stock tinker tools if below required count
     if Items.ContainerCount(Player.Backpack.Serial, 0x1EB8, -1) < tool_needed:
+        Misc.SendMessage("Making new tinker tool.")
+        Misc.Pause(500)
         while Items.ContainerCount(Player.Backpack.Serial, 0x1EB8, -1) < tool_needed:
             Items.UseItemByID(0x1EB8, 0x0000)  # Open tinker tools container
             Misc.Pause(200)
             Gumps.WaitForGump(949095101, 10000)
             Gumps.SendAction(949095101, 23)  # Select Tinker Tool
             Misc.Pause(2000)
+        # Make a single dagger to make it last craft
+        Items.UseItemByID(0x13E3, 0x0000)
+        Misc.Pause(500)
+        Misc.SendMessage("Using smith hammer.")
+        Misc.Pause(500)
+        Gumps.WaitForGump(949095101, 10000)
+        Gumps.SendAction(949095101, 36)
+        Misc.SendMessage("Slecting blade menu.")
+        Misc.Pause(500)
+        # Craft option
+        Gumps.WaitForGump(949095101, 10000)
+        Gumps.SendAction(949095101, 16)
+        Misc.SendMessage("Crafting dagger.")
+        Misc.Pause(2000)
 
 # Crafting and Storage Process
 def main():
@@ -67,25 +104,35 @@ def main():
 
         # Use smith hammer and set to iron
         Items.UseItemByID(0x13E3, 0x0000)
-        Misc.Pause(1000)
+        Misc.Pause(500)
+        Misc.SendMessage("Using smith hammer.")
+        Misc.Pause(500)
         Gumps.WaitForGump(949095101, 10000)
         Gumps.SendAction(949095101, 7)  # Set material to iron
+        Misc.SendMessage("Selecting metal type menu.")
+        Misc.Pause(500)
         Gumps.WaitForGump(949095101, 10000)
         Gumps.SendAction(949095101, 6)
+        Misc.SendMessage("Setting metal to iron.")
+        Misc.Pause(500)
+        Gumps.WaitForGump(949095101, 10000)
+        Gumps.SendAction(949095101, 36)
+        Misc.SendMessage("Slecting blade menu.")
+        Misc.Pause(500)
+        # Craft option
+        Gumps.WaitForGump(949095101, 10000)
+        Gumps.SendAction(949095101, 16)
+        Misc.SendMessage("Crafting dagger.")
+        Misc.Pause(2000)
 
         # Crafting while ingots are available
         while Items.BackpackCount(0x1BF2, -1) > 25:
             worldSave()  # Check for world save
-            reTool()     # Ensure tools are stocked
-
-            # Craft item
-            Items.UseItemByID(0x13E3, 0x0000)
-            Misc.Pause(1000)
-            Gumps.WaitForGump(949095101, 10000)
-            Gumps.SendAction(949095101, 36)  # Craft option
-            Gumps.WaitForGump(949095101, 10000)
-            Gumps.SendAction(949095101, 16)
-            Misc.Pause(2000)
+            reTool()# Ensure tools are stocked   
+            Gumps.WaitForGump(0x38920abd, 10000)
+            Gumps.SendAction(0x38920abd, 21)
+            Misc.SendMessage("Making last.")
+            Misc.Pause(2500)
             Journal.Clear()
 
             # Recycle unwanted items
@@ -94,34 +141,15 @@ def main():
             Gumps.WaitForGump(949095101, 10000)
             item_to_recycle = Items.FindAllByID(0x0F52, -1, Player.Backpack.Serial,-1)
             for item in item_to_recycle:
+                Misc.Pause(500)
                 Gumps.SendAction(949095101, 14)  # Recycle option
-                Target.WaitForTarget(1000)
+                Misc.SendMessage("Selecting recycle function.")
+                Misc.Pause(500)
+                Target.WaitForTarget(500)
                 Target.TargetExecute(item)
+                Misc.SendMessage("Tageting dagger for recycling.")
                 Misc.Pause(1000)
-                
 
-
-        # Clear empower charges
-        BuyAgent.Enable()
-
-        # Buy shirts
-        Misc.WaitForContext(0x0024A965, 10000)
-        Misc.ContextReply(0x0024A965, 2)
-        Misc.Pause(1000)
-
-        # Find all shirts in the backpack
-        shirts = Items.FindAllByID(0x1517, 0x0000, Player.Backpack.Serial,-1)
-
-        # Iterate through each shirt and empower it, then throw it away
-        for shirt in shirts:
-            CUO.PlayMacro('empower')  # Play the empower macro
-            Misc.Pause(500)
-            Target.TargetExecute(shirt)  # Target the current shirt
-            Misc.Pause(16000)
-            
-            # Move the shirt to the trash (replace destination container serial with the correct one)
-            Items.Move(shirt, 0x4197E8A8, 1)
-            Misc.Pause(1000)
 
                 
         # Recalling to storage (Winter)
@@ -162,3 +190,4 @@ def main():
 
 # RUN SCRIPT
 main()
+

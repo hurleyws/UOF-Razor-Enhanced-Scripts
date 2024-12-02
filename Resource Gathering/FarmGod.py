@@ -7,7 +7,7 @@ import random
 
 #Mark false if you want to run cemetaries 
 #Mark saveDelay false if you want to skip the 90 second wait
-farmRun = True
+farmRun = False
 saveDelay = True
 #Set to True if checking the loop box for troubleshooting
 looping = False
@@ -44,7 +44,7 @@ rune_ids = [0x483B,0x483E,0x4841,0x4844,0x4847,0x484A,0x484D,0x4850,0x4853,0x485
 
 loot_list  = [
     grizzlyStatue_ID, eagleStatue_ID, birdStatue_ID, deerStatue_ID, hide_ID, gold_ID,
-    feathers_ID, wood_ID, arrow_ID, wool_ID, pile_ID, meat_ID, cloth_ID,
+    wood_ID, arrow_ID, wool_ID, pile_ID, meat_ID, cloth_ID,
     chickenStatue_ID, lizardStatue_ID, skill_scroll_id, wolfStatue_ID, relic_ID, skeleStatue_ID, zombieStatue_ID, bandage_ID
 ]
 
@@ -60,7 +60,7 @@ loot_list.extend(bones)
 loot_list.extend(rune_ids)
 loot_list.extend(regs)
 
-fragIDs = [0x2244,0x2243,0x2242,0x2241,0x223D,0x223C,0x2244]
+fragIDs = [0x2244,0x2243,0x2242,0x2241,0x223D,0x223C,0x2244,0x5349]
 
 def combineFrags():
     # Step 1: Search the players backpack for a fragment
@@ -493,6 +493,7 @@ def killChickens():
         chickenFilter = Mobiles.Filter()
         chickenFilter.Enabled = True
         chickenFilter.Notorieties = List[Byte](bytes([3,4,6])) # optional, numbers = notoritety codes
+        chickenFilter.Hues = List[int]([0x0000])
         chickenFilter.RangeMax = 2
         chickenList = Mobiles.ApplyFilter(chickenFilter)
         
@@ -543,6 +544,7 @@ def killGame():
         gameFilter.RangeMax = 9
         gameFilter.CheckIgnoreObject = True
         gameFilter.CheckLineOfSight = True
+        gameFilter.Hues = List[int]([0x0000])
         gameList = Mobiles.ApplyFilter(gameFilter)
         gameList = sorted(gameList, key=calculate_distance)
 
@@ -881,10 +883,12 @@ def invasionCheck():
         Items.UseItem(0x42EA55BA)
         Misc.Pause(500)
         getStaff()
+        Misc.ScriptRun("bandageAssist.py")
         if saveDelay:
             Player.ChatSay(64,"Making a harvest run in 90 seconds.")
             Misc.Pause(90000)
         worldSave()
+        
         # List of possible locations
         locations = ["Jhelom Cemetary", "Britain Cemetary", "Yew Cemetary","Deceit","Mummies","Moonglow Cemetary"] #
         # Shuffle the list of locations to create a randomized order
@@ -906,7 +910,7 @@ def invasionCheck():
     else:
         Journal.Clear()
         Misc.ClearIgnore()
-        BandageHeal.Start()
+        Misc.ScriptRun("bandageAssist.py")
         deadCheck()
         if saveDelay:
             Player.ChatSay(64,"Making a harvest run in 90 seconds.")
