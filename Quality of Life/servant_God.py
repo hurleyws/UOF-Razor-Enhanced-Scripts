@@ -12,17 +12,17 @@ import random
 greenchest = Items.FindBySerial(0x412FB2AC)
 trashbarrel = Items.FindBySerial(0x43DCB065)
 regchest = Items.FindBySerial(0x4043C469)
-IDchest = Items.FindBySerial(0x43DC9B86)
+IDchest = Items.FindBySerial(0x4342B03E)
 sellchest = Items.FindBySerial(0x43DCE16C)
-keepchest = Items.FindBySerial(0x43DCE0C5)
 gemchest = Items.FindBySerial(0x4189A2CC)
 scrollchest = Items.FindBySerial(0x4043AE0E)
 tmapchest = Items.FindBySerial(0x408E8DA8)
 lockpick = Items.FindByID(0x14FC,-1,Player.Backpack.Serial)
 
 regs = {
-0x0F7A, 0x0F7B,0x0F86,0x0F8C,0x0F84,0x0F88,0x0F85,0x0F8D,
+0x0F7A, 0x0F7B,0x0F86,0x0F8C,0x0F84,0x0F88,0x0F85,0x0F8D,0x2260
 }
+#Regs includes skill scroll ID
 
 pchest = [0x0E41,0x09AB,0x0E7C,0x0E40]
 gem_ids = [0x0F21,0x0F16,0x0F19,0x0F13,0x0F10,0x0F25,0x0F2D,0x0F15,0x0F26,0x0F21] #includes RDA frag 0x0F21
@@ -40,6 +40,10 @@ arms_ids = [
     0x13B0, 0x1405, 0x1439, 0x1407, 0x1B7A, 0x1C04, 0x0F52
 ]
 
+def clean_item_name(item_name):
+    """Strips HTML tags from the item name."""
+    return re.sub(r'<.*?>', '', item_name)
+
 def worldSave():
     if (Journal.SearchByType('The world will save in 1 minute.', 'System') or Journal.SearchByType('pause', 'Regular')):
         Misc.Pause(700)
@@ -50,6 +54,7 @@ def worldSave():
         Misc.SendMessage('Continuing run', 33)
         Misc.Pause(1000)
     Journal.Clear()
+    
 def sortScrolls(item):
     Items.UseItem(scrollchest)
     Misc.Pause(500)
@@ -100,105 +105,120 @@ def pickChest(item):
                
 def IDweapons():
     Journal.Clear()
+
+    # Find the chest containing the items to identify
+    IDchest = Items.FindBySerial(0x4342B03E)
+
     while True:
-        #If there are weaponsarmor to identify, identify them
-        IDchest = Items.FindBySerial(0x43DC9B86)
-        toID = Items.GetPropStringList(IDchest.Serial) 
+        # Get the number of items in the chest and check if there are enough items to identify
+        toID = Items.GetPropStringList(IDchest.Serial)
         toID = str(toID[5])
-        toID = toID.split("items")
-        toID = toID[0]
+        toID = toID.split("items")[0]
         toID = int(toID)
-        if toID == 0:
-            Misc.SendMessage("Weapons check")
-            Misc.Pause(500)
-            break
-        if toID > 0:
-            Player.ChatSay("There are items to identify")
+
+        if toID < 5:
+            Misc.SendMessage("Not enough arms to identify.")
             Misc.Pause(1000)
-        sellchest = Items.FindBySerial(0x43DCE16C)
-        toSell = Items.GetPropStringList(sellchest.Serial) 
-        toSell = str(toSell[5])
-        toSell = toSell.split("items")
-        toSell = toSell[0]
-        toSell = int(toSell)   
-        if toSell < 50:
+            return
+
+        if toID > 5:
+            Player.ChatSay("There are enough items to identify.")
+            Misc.Pause(1000)
+                # Open the chest once to start the identification process
             Items.UseItem(IDchest)
             Misc.Pause(1000)
-            IDchest = Items.FindBySerial(0x43DC9B86)
+
+            # Check if the player is overloaded
+            if Player.Weight > 270:
+                Player.ChatSay("I am overloaded to take arms.")
+                Misc.Pause(1000)
+                return
+
+def IDweapons():
+    Journal.Clear()
+
+    # Find the chest containing the items to identify
+    IDchest = Items.FindBySerial(0x4342B03E)
+
+    # Open the chest once to start the identification process
+    Items.UseItem(IDchest)
+    Misc.Pause(1000)
+
+    while True:
+        # Get the number of items in the chest and check if there are enough items to identify
+        toID = Items.GetPropStringList(IDchest.Serial)
+        toID = str(toID[5])
+        toID = toID.split("items")[0]
+        toID = int(toID)
+
+        if toID < 5:
+            Misc.SendMessage("Not enough arms to identify.")
+            Misc.Pause(500)
+            return
+
+        if toID > 5:
+            Player.ChatSay("There are enough items to identify.")
+            Misc.Pause(1000)
+
+            # Check if the player is overloaded
+            if Player.Weight > 270:
+                Player.ChatSay("I am overloaded to take arms.")
+                Misc.Pause(1000)
+                return
+
+        # Only proceed if the player is not overloaded and there are items in the chest
+        while len(IDchest.Contains) > 0:
+            # Check if weight exceeds 270 during the loop
+
+
+            IDchest = Items.FindBySerial(0x4342B03E)  # Ensure we have the correct chest reference
+
             for item in IDchest.Contains:
+                # Use the 'Item ID' skill to identify the item
                 Player.UseSkill('Item ID')
-                Target.WaitForTarget( 2000, True )
-                Target.TargetExecute( item )
+                Target.WaitForTarget(2000, True)
+                Target.TargetExecute(item)
                 Misc.Pause(1200)
-                
-                while Journal.SearchByType( 'You are not certain...', 'Regular' ):
-                    # Failed to ID the item, keep trying until we succeed
+
+                # Retry identifying if the first attempt failed
+                while Journal.SearchByType('You are not certain...', 'Regular'):
                     Journal.Clear()
+                    Player.UseSkill('Item ID')
+                    Target.WaitForTarget(2000, True)
+                    Target.TargetExecute(item)
+                    Misc.Pause(1200)
 
-                    Player.UseSkill( 'Item ID' )
-                    Target.WaitForTarget( 2000, True )
-                    Target.TargetExecute( item )
+                # Move the item to the players backpack after successful identification
+                Items.Move(item, Player.Backpack.Serial, 1)
+                Misc.Pause(1000)
+                if Player.Weight >= 270:
+                    Player.ChatSay("I am overloaded.")
+                    Misc.Pause(1000)
+                    return  # Exit the function when overloaded
 
-                    # Wait for the skill cooldown
-                    Misc.Pause( 1200 )
-                    
-                propList = Items.GetPropStringList(item)
-                if "Vanquishing" in str(propList) and "Supremely" in str(propList):
-                    Player.HeadMessage(64,"Vanq +25, KEEPER!")
-                    Misc.Pause(500)
-                    Items.Move(item,keepchest.Serial,1)
-                    Misc.Pause(1000)
-                elif "Identification" in str(propList):
-                    Player.HeadMessage(64,"ID Wand, KEEPER!")
-                    Misc.Pause(500)
-                    Items.Move(item,keepchest.Serial,1)
-                    Misc.Pause(1000)
+        # Exit the loop if chest is empty
+        if len(IDchest.Contains) == 0:
+            Player.ChatSay("Chest is empty.")
+            return
 
-                else:
-                    Items.Move(item,sellchest.Serial,1)
-                    Misc.Pause(1000)
-                    
-                if Journal.SearchByType("That container cannot hold more items.","System"):
-                    Player.ChatSay("Sell chest is full.")
-                    Misc.Pause(500)
-                    Items.UseItem(IDchest)
-                    Misc.Pause(500)
-                    break
+
+
                     
                 
-        else:
-            break    
-#    Items.UseItem(IDchest)
-#    Misc.Pause(500)        
-    
             
 def sellArms():
-    Journal.Clear()
-    sellchest = Items.FindBySerial(0x43DCE16C)    
-    #If there are enough weapons to sell, sell them
-    toSell = Items.GetPropStringList(sellchest.Serial) 
-    toSell = str(toSell[5])
-    toSell = toSell.split("items")
-    toSell = toSell[0]
-    toSell = int(toSell)   
-    if toSell <50:
-        Misc.SendMessage("Sell weapons check")
-        Misc.Pause(500)
-        return
-    Items.UseItem(sellchest)
-    Misc.Pause(500)
-    for item in sellchest.Contains:
-        Items.Move(item,Player.Backpack.Serial,1)
+    Journal.Clear() 
+    if Player.Weight < 270:
+        Misc.SendMessage("Not yet ready to sell arms.")
         Misc.Pause(1000)
-        if Player.Weight > 280:
-            break
+        return
             
     SellAgent.Enable()
     worldSave()
     Player.ChatSay(75,"[recall Sell Arms")
     Misc.Pause(3000)
-    Misc.WaitForContext(0x0013C3E0, 10000) 
-    Misc.ContextReply(0x0013C3E0, 2) #Guild master sale
+    Misc.WaitForContext(0x00136620, 10000) 
+    Misc.ContextReply(0x00136620, 2) #Guild master sale
     Misc.Pause(1000)
     Player.ChatSay(26, 'I thank thee.')
     Misc.Pause(200)
@@ -241,13 +261,14 @@ def sellArms():
     Misc.Pause(1000)
     Items.Move(Items.FindByID(0x0F7A,-1,0x4043C469),Player.Backpack.Serial,3)
     Misc.Pause(1000)
-    Player.ChatSay(26, 'Ive done unspeakable things for this gold.')
     Journal.Clear()
+    Items.UseItem(greenchest) 
     Misc.Pause(1000)
         
 def unloadParagons():
-    Misc.SendMessage("Paragon check")
-    Misc.Pause(500)
+    Misc.SendMessage("Checking for paragon chests.")
+    Misc.Pause(1000)     
+
     for item in greenchest.Contains:
         if item.ItemID in pchest:
             Player.ChatSay("A paragon chest, how exciting!")
@@ -288,7 +309,7 @@ def unloadParagons():
                 worldSave()
                 for i in contents:
                     if i.ItemID == 0x2AA2:
-                        Items.Move(i,keepchest,1)
+                        Items.Move(i,IDchest,1)
                         Misc.Pause(1000)
                 Misc.Pause(200)
                 #get gold/tmaps
@@ -305,7 +326,7 @@ def unloadParagons():
                     if "Identification" in str(iprops):
                         Player.ChatSay("ID wand!")
                         Misc.Pause(500)
-                        Items.Move(i,keepchest,1)
+                        Items.Move(i,greenchest,1)
                         Misc.Pause(1000)
                 Misc.Pause(200)
                 #sort gems/RDAs
@@ -408,11 +429,12 @@ def unloadParagons():
                 Player.PathFindTo(6779, 3892, 17)
                 while Player.DistanceTo(IDchest) > 1:
                     Misc.Pause(500)
-    Misc.Pause(1000)                    
+    
+                Items.UseItem(greenchest)            
+                Misc.Pause(1000)
+      
             
 def unloadSeaChests():
-    Misc.SendMessage("Sea chest check")
-    Misc.Pause(500)
     seaChests = Items.Filter()
     seaChests.Enabled = True
     seaChests.OnGround = True
@@ -427,6 +449,10 @@ def unloadSeaChests():
         Player.PathFindTo(6780, 3896, 17)
         while Player.DistanceTo(trashbarrel) > 2:
             Misc.Pause(1000)
+    else:
+        Misc.SendMessage("No sea chests found.")
+        Misc.Pause(1000)
+        return
             
     Misc.Pause(1000)
     #chest drop location must be (6780,3897,17)
@@ -467,7 +493,10 @@ def unloadSeaChests():
         worldSave()
         for i in c.Contains:
             if i.ItemID == 0x2AA2:
-                Items.Move(i,keepchest,1)
+                clean_name = clean_item_name(i.Name)  # Clean the item name
+                Player.HeadMessage(64, "Ah, " + clean_name + " Relic!")  # Display the cleaned name
+                Misc.Pause(500)
+                Items.Move(i,greenchest,1)
                 Misc.Pause(1000)
         Misc.Pause(200)
         #get gold/tmaps
@@ -484,7 +513,7 @@ def unloadSeaChests():
             if "Identification" in str(iprops):
                 Player.ChatSay("ID wand!")
                 Misc.Pause(500)
-                Items.Move(i,keepchest,1)
+                Items.Move(i,greenchest,1)
                 Misc.Pause(1000)
         Misc.Pause(200)
         #sort gems/RDAs
@@ -587,11 +616,14 @@ def unloadSeaChests():
     Player.PathFindTo(6779, 3892, 17)
     while Player.DistanceTo(IDchest) > 1:
         Misc.Pause(500)  
-
+    Items.UseItem(greenchest)            
+    Misc.Pause(1000)   
     
-while True:
-    Items.UseItem(greenchest)
-    Misc.Pause(500)        
+    
+Items.UseItem(greenchest)
+Misc.Pause(500)   
+    
+while True:    
     IDweapons()
     sellArms()
     unloadSeaChests() 
