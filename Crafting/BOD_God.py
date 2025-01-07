@@ -1,5 +1,47 @@
 import time
 import random
+from System.Collections.Generic import List
+from System import Int32 as int
+from System import Byte
+
+def checkPositionAndMobiles(expectedX, expectedY, maxWait=10000):
+    """
+    Check if the player is at the expected position and ensure no mobiles are within 3 tiles.
+    If not, wait up to `maxWait` milliseconds and retry the `goHome()` function if needed.
+
+    :param expectedX: Expected X coordinate of the player.
+    :param expectedY: Expected Y coordinate of the player.
+    :param maxWait: Maximum wait time in milliseconds for lag to clear or mobiles to leave.
+    """
+    Misc.SendMessage(f"Checking position: Expected ({expectedX}, {expectedY}), Current ({Player.Position.X}, {Player.Position.Y})", 77)
+    Misc.Pause(500)
+    
+    elapsedTime = 0
+    retryInterval = 1000  # Check every 500 ms
+
+    while elapsedTime < maxWait:
+        # Check if the player is in the correct position
+        if Player.Position.X == expectedX and Player.Position.Y == expectedY:
+            # Filter for mobiles within 3 tiles
+            mobilesFilter = Mobiles.Filter()
+            mobilesFilter.RangeMax = 2
+            mobilesFilter.Notorieties = List[Byte](bytes([1,2,3,4]))
+
+            nearbyMobiles = Mobiles.ApplyFilter(mobilesFilter)
+
+            if len(nearbyMobiles) == 0:
+                Misc.SendMessage("Pass: Player is in the correct position and no mobiles are nearby.", 77)
+                return  # Exit the function when in the correct position and no mobiles are nearby
+            else:
+                Misc.SendMessage(f"Waiting for mobiles to leave: {len(nearbyMobiles)} detected.", 33)
+        
+        Misc.Pause(retryInterval)
+        elapsedTime += retryInterval
+    
+    # If the player is still not at the correct position or mobiles are still present, retry goHome()
+    Misc.SendMessage("Fail: Conditions not met. Retrying goHome().", 33)
+    goHome()  # Retry the goHome function
+
 
 def unloadResources():
     Items.UseItem(0x42E87E92)  # Artisan tool or container
@@ -15,7 +57,7 @@ def unloadResources():
         Items.Move(log_in_backpack, 0x41132AE2, -1)  # Move all logs from backpack back to storage
         Misc.Pause(1000)
     if ingot_in_backpack:
-        Items.Move(ingot_in_backpack, 0x42E87E92, ingot_count_in_backpack - 200)  # Move excess ingots back to storage
+        Items.Move(ingot_in_backpack, 0x42EA4E24, ingot_count_in_backpack - 200)  # Move excess ingots back to storage
         Misc.Pause(1000)
 
 def bodbagCheck():
@@ -74,7 +116,7 @@ def trainArtisan():
     # First check to see if we have enough wood to start
     if log_count_in_pouch > 1000:
         ingot_count_in_backpack = Items.BackpackCount(0x1BF2, 0x0000)  # Count of ingots in the backpack
-        ingot_in_storage = Items.FindByID(0x1BF2, 0x0000, 0x42E87E92)  # Find ingots in storage (artisan tool or container)
+        ingot_in_storage = Items.FindByID(0x1BF2, 0x0000, 0x42EA4E24)  # Find ingots in storage (artisan tool or container)
         
         # Need to have at least 1000 logs in the backpack to start
         log_count_in_backpack = Items.BackpackCount(0x1BDD, 0x0000)  # Count of logs in the backpack
@@ -92,7 +134,7 @@ def trainArtisan():
         # If I have more than 200 ingots, reduce them to 200
         if ingot_count_in_backpack > 200:
             ingot_in_backpack = Items.FindByID(0x1BF2, 0x0000, Player.Backpack.Serial)  # Find ingots in backpack
-            Items.Move(ingot_in_backpack, 0x42E87E92, ingot_count_in_backpack - 200)  # Move excess ingots back to storage
+            Items.Move(ingot_in_backpack, 0x42EA4E24, ingot_count_in_backpack - 200)  # Move excess ingots back to storage
             Misc.Pause(1000)
         
         # The two lines below are necessary since you want to check if you have enough logs and find logs in storage earlier.
@@ -279,6 +321,7 @@ def bod_run():
         Misc.Pause(1000)
     Player.ChatSay(64,'[recall Winter Lodge')
     Misc.Pause(3000)
+    checkPositionAndMobiles(6802, 3902)
     trashCheck()
     Player.PathFindTo(6802, 3901, 12)
     Misc.Pause(1500)

@@ -4,6 +4,8 @@ from System import Int32 as int
 import time
 import keyboard
 
+#Future project: steal the mushroom cave bong: item filter 0xAF67
+
 def goHome():
     attempt_recall("Winter Lodge")
     Misc.Pause(3000)

@@ -5,7 +5,7 @@ from System import Byte
 mobFilter = Mobiles.Filter()
 mobFilter.Enabled = True
 mobFilter.RangeMin = 0  # Minimum range to check
-mobFilter.RangeMax = 9  # Maximum range to check
+mobFilter.RangeMax = 12  # Maximum range to check
 mobFilter.Notorieties = List[Byte](bytes([3, 4, 6]))  # Filter by notoriety (e.g., neutral, enemy)
 
 # Apply the filter to get a list of matching mobs

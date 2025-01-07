@@ -12,7 +12,7 @@ prospect = False
 #BONDED BEETLE??##
 #10=bonded, 9=unbonded#####
 metaSmelting = True
-oreColor = [0x0000,0x0415,0x0455,0x045f,0x06d8]
+oreColor = [0x0415,0x0455,0x045f,0x06d8] #0x0000
 bondIndex = 10
 
 
@@ -171,7 +171,7 @@ def useSmelter():
 
 
 
-    # Move ore from the player's backpack to the smelter
+    # Move ore from the players backpack to the smelter
     moveRocks(Player.Backpack.Serial, smelter_serial)
 
     # Move ore from the beetlepack to the smelter
@@ -246,7 +246,11 @@ def prospectLocation(*args):
     Misc.Pause(500)
     Target.TargetExecute(*args)
     Misc.Pause(500)
-        
+
+Misc.ScriptRun("PK Radar.py")
+Misc.Pause(500)
+
+    
 while True:
     Journal.Clear()    
     toolCheck()

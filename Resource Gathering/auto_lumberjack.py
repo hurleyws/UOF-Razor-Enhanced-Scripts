@@ -5,6 +5,8 @@
 
 from System import Int32 as int
 from System.Collections.Generic import List
+import random
+import clr
 
 if Player.GetRealSkillValue('Lumberjacking') < 40:
     Misc.SendMessage('No skill, stopping',33)
@@ -113,20 +115,40 @@ class Tree:
 
 def RecallNextSpot():
     global lastRune
+    global unused_locations
 
     Gumps.ResetGump()
 
     Misc.SendMessage('--> Recall to Spot', 77)
+    
+    # List of 12 forest-type locations
+    forest_locations = [
+        "Compassion Forest", "Compassion Meadow", "Shadow Glen",
+        "Hedgewoods", "Moongrove", "Yew Thicket",
+        "Bramblewood", "Yew Hollow", "Misty Grove",
+        "Seaside Forest", "Moonlit Glade"
+    ]
+    
+    # List to track unused locations
+    unused_locations = []
+    
 
-    Items.UseItem( runebookTrees )
-    Gumps.WaitForGump( 1431013363, TimeoutOnWaitAction )
-    Gumps.SendAction( 1431013363, lastRune )
+    # Reset unused_locations if all locations have been used
+    if not unused_locations:
+        unused_locations = forest_locations.copy()
+        random.shuffle(unused_locations)  # Shuffle for randomness
 
-    Misc.Pause( recallPause )
+    # Select the next location
+    next_location = unused_locations.pop()
 
-    lastRune = lastRune + 6
-    if lastRune > 32:
-        lastRune = 2
+    Misc.Pause(500)
+
+    Player.ChatSay(f"[recall {next_location}")
+    Misc.Pause(2000)  # Pause for 2 seconds
+
+    # Log the recall for debugging
+    Player.ChatSay(55,f"Harvesting at {next_location}")
+
 
     EquipAxe()
 
@@ -175,7 +197,7 @@ def MoveToTree():
     global treeCoords
     pathlock = 0
     Misc.SendMessage( '--> Moving to TreeSpot: %i, %i' % ( trees[ 0 ].x, trees[ 0 ].y ), 77 )
-    Misc.Pause(200)
+    Misc.Pause(1000)
     Misc.Resync()
     worldSave()
     treeCoords = PathFinding.Route()
@@ -275,70 +297,101 @@ def CutTree():
     global blockCount
     global trees
     if Target.HasTarget():
-        Misc.SendMessage( '--> Detected block, canceling target!', 77 )
+        Misc.SendMessage('--> Detected block, canceling target!', 77)
         Target.Cancel()
-        Misc.Pause( 500 )
+        Misc.Pause(500)
 
+    # Handle weight limit and beetle capacity
     if Player.Weight >= weightLimit:
-        MoveToBeetle()
+        if MoveToBeetle():  # Returns True if beetle is full and goHome() is called
+            return True
+        Misc.Pause(500)
         MoveToTree()
-    
+
     CheckEnemy()
     worldSave()
-
     Journal.Clear()
 
-    Items.UseItem( Player.GetItemOnLayer( 'LeftHand' ) )
-    Target.WaitForTarget( TimeoutOnWaitAction , True )
-    #EXPERIMENTAL PAUSE ADD
-    Misc.Pause(1000)
-    Target.TargetExecute( trees[ 0 ].x, trees[ 0 ].y, trees[ 0 ].z, trees[ 0 ].id )
-    worldSave()
-    Timer.Create('chopTimer', 10000)
-    while not ( Journal.SearchByType( 'You hack at the tree for a while, but fail to produce any useable wood.', 'System' ) or 
-        Journal.SearchByType( 'You chop some', 'System' ) or 
-            Journal.SearchByType( 'There\'s not enough wood here to harvest.', 'System' ) or
-            Timer.Check('chopTimer') == False ):
-        Misc.Pause( 500 )
-        
+    # Begin chopping process
+    Items.UseItem(Player.GetItemOnLayer('LeftHand'))
+    Target.WaitForTarget(TimeoutOnWaitAction, True)
+    Misc.Pause(1000)  # Experimental pause
+    Target.TargetExecute(trees[0].x, trees[0].y, trees[0].z, trees[0].id)
+    Timer.Create('chopTimer', 15000)  # Longer timer for robustness
 
-    if Journal.SearchByType( 'There\'s not enough wood here to harvest.', 'System' ):
-        Misc.SendMessage( '--> Tree change', 77 )
-        Misc.Pause(500)
-        Timer.Create( '%i,%i' % ( trees[ 0 ].x, trees[ 0 ].y ), treeCooldown )
-    elif Journal.Search( 'That is too far away' ):
-        blockCount = blockCount + 1
-        Journal.Clear()
-        if blockCount > 3:
-            blockCount = 0
-            Misc.SendMessage( '--> Possible block detected tree change', 77 )
+    while not (
+        Journal.SearchByType('You hack at the tree for a while, but fail to produce any useable wood.', 'System') or
+        Journal.SearchByType('There\'s not enough wood here to harvest.', 'System')
+    ):
+        # Special wood detection
+        if Journal.Search('bloodwood'):
+            Player.HeadMessage(1194, 'BLOODWOOD!')
+            Misc.SendMessage('--> BLOODWOOD detected!', 77)
             Misc.Pause(500)
-            Timer.Create( '%i,%i' % ( trees[ 0 ].x, trees[ 0 ].y ), treeCooldown )
-        else:
-            CutTree()
-    elif Journal.Search( 'bloodwood' ):
-        Player.HeadMessage( 1194, 'BLOODWOOD!' )
-        Timer.Create('chopTimer', 10000)
-        CutTree()
-    elif Journal.Search( 'heartwood' ):
-        Player.HeadMessage( 1193, 'HEARTWOOD!' )
-        Timer.Create('chopTimer', 10000)
-        CutTree()
-    elif Journal.Search( 'frostwood' ):
-        Player.HeadMessage( 1151, 'FROSTWOOD!' )
-        Timer.Create('chopTimer', 10000)
-        CutTree()
-    elif Timer.Check('chopTimer') == False:
-        Misc.SendMessage( '--> Tree change', 77 )
-        Timer.Create( '%i,%i' % ( trees[ 0 ].x, trees[ 0 ].y ), treeCooldown )
-    else:
-        CutTree()
+        elif Journal.Search('heartwood'):
+            Player.HeadMessage(1193, 'HEARTWOOD!')
+            Misc.SendMessage('--> HEARTWOOD detected!', 77)
+            Misc.Pause(500)
+        elif Journal.Search('frostwood'):
+            Player.HeadMessage(1151, 'FROSTWOOD!')
+            Misc.SendMessage('--> FROSTWOOD detected!', 77)
+            Misc.Pause(500)
+
+        # Immediately retry chopping if wood is gathered
+        if Journal.SearchByType('You chop some', 'System'):
+            Misc.SendMessage('--> Successfully chopped wood, retrying immediately.', 77)
+            Misc.Pause(500)
+            CheckEnemy()
+            worldSave()
+            Journal.Clear()  # Clear journal to detect new entries
+            Items.UseItem(Player.GetItemOnLayer('LeftHand'))
+            Target.WaitForTarget(TimeoutOnWaitAction, True)
+            Misc.Pause(1000)
+            Target.TargetExecute(trees[0].x, trees[0].y, trees[0].z, trees[0].id)
+            Timer.Create('chopTimer', 15000)  # Reset timer for retries
+
+        # Handle "too far away" message and move to the next tree
+        elif Journal.SearchByType('That is too far away', 'System'):
+            Misc.SendMessage('--> Tree is too far away, moving to next tree.', 77)
+            Misc.Pause(500)
+            Timer.Create('%i,%i' % (trees[0].x, trees[0].y), treeCooldown)
+            return False
+
+        # Retry chopping on timer expiration
+        elif Timer.Check('chopTimer') == False:
+            Misc.SendMessage('--> Timer expired, retrying same tree.', 77)
+            Misc.Pause(500)
+            Timer.Create('chopTimer', 15000)  # Reset timer
+            Items.UseItem(Player.GetItemOnLayer('LeftHand'))
+            Target.WaitForTarget(TimeoutOnWaitAction, True)
+            Misc.Pause(1000)
+            Target.TargetExecute(trees[0].x, trees[0].y, trees[0].z, trees[0].id)
+
+        Misc.Pause(500)
+
+    # Process journal messages
+    if Journal.SearchByType('There\'s not enough wood here to harvest.', 'System'):
+        Misc.SendMessage('--> Tree depleted, moving to next tree.', 77)
+        Misc.Pause(500)
+        Timer.Create('%i,%i' % (trees[0].x, trees[0].y), treeCooldown)
+    elif Journal.SearchByType('That is too far away', 'System'):  # Redundant check for safety
+        Misc.SendMessage('--> Tree is too far away, moving to next tree.', 77)
+        Misc.Pause(500)
+        Timer.Create('%i,%i' % (trees[0].x, trees[0].y), treeCooldown)
+        return False
+
+    Misc.SendMessage('--> Finished chopping tree.', 77)
+    Misc.Pause(500)
+    return False
+
 
 def CheckEnemy():
     enemy = Target.GetTargetFromList( 'enemywar' )
     if enemy != None:
-        Player.HeadMessage(64,"Ah! Snake!")
-        Misc.ScriptRun( autoFightMacroName )
+        Player.HeadMessage(64,"Have at thee, beast!")
+        Misc.Pause(500)
+        Player.Attack(enemy)
+        Misc.Pause(500)
         while enemy != None:
             Timer.Create('Fight', 2500)
             Misc.Pause( 1000 )
@@ -353,10 +406,9 @@ def CheckEnemy():
                     enemyCoords.X = enemyPosition.X
                     enemyCoords.Y = enemyPosition.Y - 1
                     PathFinding.Go( enemyCoords )
-                
-                    Misc.ScriptRun( autoFightMacroName )
+                    Player.Attack(enemy)
                 elif Timer.Check('Fight') == False:
-                    Misc.ScriptRun( autoFightMacroName )
+                    Player.Attack(enemy)
                     Timer.Create('Fight', 2500)
             enemy = Target.GetTargetFromList( 'enemywar' )
 
@@ -492,7 +544,7 @@ def worldSave():
     
     
 def MoveToBeetle():
-    max_capacity = 15000
+    max_capacity = 5000
     
     # Chop logs into boards
     if logsToBoards:
@@ -515,31 +567,26 @@ def MoveToBeetle():
     logcount = int(logs)
     
     # Calculate the percentage of the beetles capacity
-    percentage_filled = (logcount / max_capacity) * 100
+    percentage_filled = int((logcount / max_capacity) * 100)
     
     # Show the percentage filled as a player head message
-    Player.HeadMessage(33, "{:.2f}% of beetle capacity filled".format(percentage_filled))
+    Player.HeadMessage(33, f"{percentage_filled}% of beetle capacity filled")
     Misc.Pause(500)
     
-    if logcount > 13000:
+    if logcount > 4000:
         Player.HeadMessage(33, 'BEETLE FULL STOPPING')
         Misc.Pause(500)
-        Misc.ScriptStop("auto_lumberjack.py")
-        Misc.Pause(2000)
-        return
+        goHome()
+        return True
 
     # Move boards to beetle, if they will fit in the beetle
     for item in Player.Backpack.Contains:
         if logsToBoards and item.ItemID == hide_ID:
-            numberOfBoardsInBeetle = GetNumberOfBoardsInBeetle()
-            if numberOfBoardsInBeetle + i.Amount < max_capacity:
-                Items.Move(i, beetle, 0)
-                Misc.Pause(dragDelay)
+            Items.Move(i, beetle, 0)
+            Misc.Pause(dragDelay)
         elif not logsToBoards and (item.ItemID == logID or item.ItemID == hide_ID):
-            numberOfLogsInBeetle = GetNumberOfLogsInBeetle()
-            if numberOfLogsInBeetle + item.Amount < max_capacity:
-                Items.Move(item, beetle, 0)
-                Misc.Pause(dragDelay)
+            Items.Move(item, beetle, 0)
+            Misc.Pause(dragDelay)
 
     groundItems = filterItem([hide_ID, logID])
 
@@ -616,6 +663,91 @@ def checkItemByID(item_to_check, valid_ids):
     return False
     
 
+    
+def goHome():
+    Misc.Pause(500)
+    Player.ChatSay("All follow me")
+    Misc.Pause(500)
+    Player.ChatSay("[recall Winter Lodge")
+    Misc.Pause(2500)
+    Player.PathFindTo(6802, 3901, 12)
+    Misc.Pause(1500)
+    Player.PathFindTo(6803, 3899, 17)
+    Misc.Pause(1500)
+    if Player.Mount:
+        Mobiles.UseMobile( Player.Serial )
+        Misc.Pause( 500 )
+    Misc.WaitForContext(0x001523D4, 10000)
+    Misc.ContextReply(0x001523D4, 10)
+    Misc.Pause(500)
+        
+
+    beetle = Mobiles.FindBySerial(0x001523D4)
+    wood_pouch = Items.FindBySerial(0x41132AE2)
+    leather_pouch = Items.FindBySerial(0x435ED948)
+    wood_box = Items.FindBySerial(0x42E87E92) 
+    Items.UseItem(wood_box)
+    Misc.Pause(500)
+    Items.UseItem(wood_pouch)
+    Misc.Pause(500)
+    Items.UseItem(leather_pouch)
+    Misc.Pause(500)
+
+
+    # Move items from players backpack
+    for i in Player.Backpack.Contains:
+        if i.ItemID == 0x1BDD: #wood
+            Items.Move(i,0x41132AE2,-1)
+            Misc.Pause(1000)
+        elif i.ItemID == 0x0EED: #gold
+            Items.Move(i,0x42E87E92,-1)
+            Misc.Pause(1000)
+        elif i.ItemID == 0x0F7E: #bone
+            Items.Move(i,0x435ED948,-1)
+            Misc.Pause(1000)
+        elif i.ItemID == 0x1081: #leather
+            Items.Move(i,0x435ED948,-1)
+            Misc.Pause(1000)
+    # Move items from beetles backpack
+    for i in beetle.Backpack.Contains:
+        if i.ItemID == 0x1BDD: #wood
+            Items.Move(i,0x41132AE2,-1)
+            Misc.Pause(1000)
+        elif i.ItemID == 0x1081: #leather
+            Items.Move(i,0x435ED948,-1)
+            Misc.Pause(1000)
+        
+    bandages = Items.BackpackCount(0x0E21,-1)
+    if bandages < 100:
+        bandageHold = Items.FindByID(0x0E21,-1,0x42E87E92)
+        Items.Move(bandageHold,Player.Backpack.Serial,100)
+        Misc.Pause(1000)
+
+        
+    #read runebook charges
+    runebook = Items.FindBySerial(0x43F88669)
+    rbcharges = Items.GetPropStringByIndex(runebook,6)
+    parts = rbcharges.split()  # parts = ["Charges", "10/10"]
+    charge_info = parts[1]  # charge_info = "10/10"
+    numerator, _ = charge_info.split('/')  # numerator = "10"
+    emergency_charges = int(numerator)
+    #move exact amount of recall scrolls
+    if emergency_charges < 83:
+        scrollstomove = 83 - emergency_charges
+        scrollsupply = Items.FindByID(0x1F4C,0x0000,0x42E87E92)
+        Items.Move(scrollsupply,runebook,scrollstomove)
+        Misc.Pause(1000)
+   
+            
+    if not Player.Mount:
+        Mobiles.UseMobile( beetle )
+        Misc.Pause( 500 )
+
+Misc.Pause(500)
+Misc.ScriptRun("PK Radar.py")
+Misc.Pause(500)
+Misc.ScriptRun("bandageAssist.py") 
+Misc.Pause(500)     
 Friend.ChangeList('lj')
 Misc.Pause(500)
 Misc.SendMessage('--> Start up Woods', 77)
@@ -625,8 +757,10 @@ while onLoop:
     ScanStatic()
     i = 0
     while trees.Count > 0:
+        Misc.Pause(500)
         MoveToTree()
-        CutTree()
+        if CutTree():
+            break
         trees.pop( 0 )
         trees = sorted( trees, key = lambda tree: sqrt( pow( ( tree.x - Player.Position.X ), 2 ) + pow( ( tree.y - Player.Position.Y ), 2 ) ) )
     trees = []

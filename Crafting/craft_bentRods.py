@@ -9,7 +9,7 @@ import winsound
 import sys
 #***************SETUP SECTION**********************************
 #ItemSerials
-beetle = 0x00121BEB
+beetle = 0x004FEA0E
 keepGM = False # true to keep all GM rods too
 keepCount = 100 # how many GM rods to keep
 #**************************************************************
@@ -108,9 +108,9 @@ def checkMats():
         if Player.Mount:
             Mobiles.UseMobile(self)
             Misc.Pause(dragTime)
-            Misc.WaitForContext(0x00121BEB, 10000)
-            Misc.ContextReply(0x00121BEB, 10)
-            Items.Move(Items.FindByID(0x1766,-1,0x417EFFFD), Player.Backpack.Serial, 500)
+            Misc.WaitForContext(0x004FEA0E, 10000)
+            Misc.ContextReply(0x004FEA0E, 10)
+            Items.Move(Items.FindByID(0x1766,-1,0x4B0936DA), Player.Backpack.Serial, 500)
             Misc.Pause(dragTime)
             Mobiles.UseMobile(beetle)
             Misc.Pause(dragTime)
@@ -121,9 +121,9 @@ def checkMats():
         if Player.Mount:
             Mobiles.UseMobile(self)
             Misc.Pause(dragTime)
-            Misc.WaitForContext(0x00121BEB, 10000)
-            Misc.ContextReply(0x00121BEB, 10)
-            Items.Move(Items.FindByID(0x1BDD,-1,0x417EFFFD), Player.Backpack.Serial, 500)
+            Misc.WaitForContext(0x004FEA0E, 10000)
+            Misc.ContextReply(0x004FEA0E, 10)
+            Items.Move(Items.FindByID(0x1BD7,-1,0x4B0936DA), Player.Backpack.Serial, 500)
             Misc.Pause(dragTime)
             Mobiles.UseMobile(beetle)
             Misc.Pause(dragTime)

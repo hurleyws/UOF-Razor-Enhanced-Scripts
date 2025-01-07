@@ -1,0 +1,18 @@
+{
+  "contributes": {
+    "languages": [
+      {
+        "id": "python",
+        "extensions": [".py"],
+        "aliases": ["Python", "py"]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "python",
+        "scopeName": "source.python.razorenhanced",
+        "path": "./syntaxes/razorenhanced.tmLanguage.json"
+      }
+    ]
+  }
+}

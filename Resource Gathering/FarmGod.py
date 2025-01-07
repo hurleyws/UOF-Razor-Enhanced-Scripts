@@ -7,7 +7,7 @@ import random
 
 #Mark false if you want to run cemetaries 
 #Mark saveDelay false if you want to skip the 90 second wait
-farmRun = False
+farmRun = True
 saveDelay = True
 #Set to True if checking the loop box for troubleshooting
 looping = False
@@ -33,6 +33,7 @@ skill_scroll_id = 0x2260
 relic_ID = 0x2AA2
 skeleStatue_ID = 0x20E7
 zombieStatue_ID = 0x20EC
+zombieStatue2_ID = 0x25D5
 crystal_ID = 0x2244
 bandage_ID = 0x0E21
 
@@ -44,8 +45,8 @@ rune_ids = [0x483B,0x483E,0x4841,0x4844,0x4847,0x484A,0x484D,0x4850,0x4853,0x485
 
 loot_list  = [
     grizzlyStatue_ID, eagleStatue_ID, birdStatue_ID, deerStatue_ID, hide_ID, gold_ID,
-    wood_ID, arrow_ID, wool_ID, pile_ID, meat_ID, cloth_ID,
-    chickenStatue_ID, lizardStatue_ID, skill_scroll_id, wolfStatue_ID, relic_ID, skeleStatue_ID, zombieStatue_ID, bandage_ID
+    wood_ID, arrow_ID, wool_ID, pile_ID, cloth_ID,
+    chickenStatue_ID, lizardStatue_ID, skill_scroll_id, wolfStatue_ID, relic_ID, skeleStatue_ID, zombieStatue_ID, zombieStatue2_ID, bandage_ID
 ]
 
 # New bones list
@@ -393,18 +394,60 @@ def spinBolts():
                     item = updated_item
                 else:
                     break
+
+def checkPositionAndMobiles(expectedX, expectedY, maxWait=10000):
+    """
+    Check if the player is at the expected position and ensure no mobiles are within 3 tiles.
+    If not, wait up to `maxWait` milliseconds and retry the `goHome()` function if needed.
+
+    :param expectedX: Expected X coordinate of the player.
+    :param expectedY: Expected Y coordinate of the player.
+    :param maxWait: Maximum wait time in milliseconds for lag to clear or mobiles to leave.
+    """
+    Misc.SendMessage(f"Checking position: Expected ({expectedX}, {expectedY}), Current ({Player.Position.X}, {Player.Position.Y})", 77)
+    Misc.Pause(500)
+    if Player.IsGhost:
+        return
+    
+    elapsedTime = 0
+    retryInterval = 2000  # Check every 500 ms
+
+    while elapsedTime < maxWait:
+        # Check if the player is in the correct position
+        if Player.Position.X == expectedX and Player.Position.Y == expectedY:
+            # Filter for mobiles within 3 tiles
+            mobilesFilter = Mobiles.Filter()
+            mobilesFilter.RangeMax = 2
+            mobilesFilter.Notorieties = List[Byte](bytes([1,2,3,4]))
+
+            nearbyMobiles = Mobiles.ApplyFilter(mobilesFilter)
+
+            if len(nearbyMobiles) == 0:
+                Misc.SendMessage("Pass: Player is in the correct position and no mobiles are nearby.", 77)
+                return  # Exit the function when in the correct position and no mobiles are nearby
+            else:
+                Misc.SendMessage(f"Waiting for mobiles to leave: {len(nearbyMobiles)} detected.", 33)
+        
+        Misc.Pause(retryInterval)
+        elapsedTime += retryInterval
+    
+    # If the player is still not at the correct position or mobiles are still present, retry goHome()
+    Misc.SendMessage("Fail: Conditions not met. Retrying goHome().", 33)
+    goHome()  # Retry the goHome function
+
+    
+                    
+
 def goHome():
     attempt_recall("Winter Lodge")
+    checkPositionAndMobiles(6802, 3902)
     deadCheck()
-    while True:
-        kindling = Items.FindByID(0x0DE1, -1, Player.Backpack.Serial)
-        if kindling:
-            Items.UseItem(kindling)
-            Misc.Pause(500)
-        else:
-            break  # Exit the loop if no kindling is found
     Player.PathFindTo(6802, 3901, 12)
     Misc.Pause(1500)
+    door = Items.FindBySerial(0x42F89EDC)
+    if door.ItemID == 0x0677:
+        Items.UseItem(door)
+        Misc.Pause(500)
     Player.PathFindTo(6803, 3897, 17)
     Misc.Pause(2500)
     spinBolts()

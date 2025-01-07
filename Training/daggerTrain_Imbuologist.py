@@ -2,6 +2,68 @@ from System.Collections.Generic import List
 from System import Int32 as int
 
 
+################ Items to keep Setup Section #########################
+
+# slayer props, take out the ones you dont want to keep, if you want. Will keep all slayers in list.
+slayerProps = ['Silver','Dragon Slaying','Balron Damnation','Daemon Dismissal','Elemental Ban','Reptilian Death','Terathan','Exorcism','Repond','Fey','Water Dissipation']
+# You can move slayers you do not want to keep down here, or just delete them. 
+#'Dragon Slaying','Balron Damnation','Daemon Dismissal',,'Elemental Ban','Reptilian Death','Terathan','Exorcism','Repond','Fey','Water Dissipation'
+# Just make sure they have a # in front so the code will ignore them.
+#'Orc Slaying','Ogre Trashing','Earth Shatter','Arachnid', 'Blood Drinking','Lizardman Slaughter','Scorpion\'s Bane','Vacuum','Gargoyle\'s Foe','Troll Slaughter','Flame Dousing','Summer Wind','Spider\'s Death','Elemental Health','Ophidian','Snake\'s Bane'
+
+
+######################### Do not touch anything below here################
+
+keepSlayers = False
+
+def slayerCheck():
+    if Journal.SearchByType('You have successfully crafted a slayer', 'System'):
+        dagger = Items.FindByID(0x0F52, -1, Player.Backpack.Serial)  # Find the dagger in the backpack
+        if dagger:
+            daggerprops = Items.GetPropStringList(dagger)  # Get the list of properties of the dagger
+
+            # Loop through each property in the daggers properties list
+            for prop in daggerprops:
+                for slayer in slayerProps:
+                    if slayer.lower() in prop.lower():  # Case insensitive check for matching properties
+                        Misc.SendMessage(f"Found a match: {prop} matches {slayer}!")  # Debug message for log
+
+                        # Display a message to the player with the name of the slayer
+                        Player.HeadMessage(64, f"This is a {slayer} slayer!")  # Display slayer name
+                        Misc.Pause(500)
+
+                        if Player.Mount:
+                            Mobiles.UseMobile(Player.Serial)
+                            Misc.Pause(250)
+                            Player.ChatSay("All follow me")
+                            Misc.Pause(250)
+                        beetle = 0x004FEA0E
+                        Items.Move(dagger,beetle,1)
+                        Misc.Pause(1000)
+                        Mobiles.UseMobile(beetle)
+                        Misc.Pause(500)
+                        Journal.Clear()
+                        return True
+
+            # If no match was found, print a message
+            Misc.SendMessage("No matching slayer property found.")
+            Misc.Pause(200)
+            Misc.SendMessage(str(daggerprops)
+            ,94)
+            Misc.Pause(200)
+            return False
+            
+        else:
+            Misc.SendMessage("No dagger found in the backpack.")
+            Misc.Pause(200)
+            return True
+    else:
+        Misc.SendMessage("No slayer craft event detected.")
+        Misc.Pause(200)
+        return False
+        
+    
+
 def stockRegs():
     root = Items.BackpackCount(0x0F7A,-1)
     moss = Items.BackpackCount(0x0F7B,-1)
@@ -133,6 +195,9 @@ def main():
             Gumps.SendAction(0x38920abd, 21)
             Misc.SendMessage("Making last.")
             Misc.Pause(2500)
+            if keepSlayers:
+                if slayerCheck():
+                    continue
             Journal.Clear()
 
             # Recycle unwanted items

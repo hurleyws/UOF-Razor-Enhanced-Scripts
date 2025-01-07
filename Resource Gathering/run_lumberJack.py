@@ -1,6 +1,8 @@
 Misc.Pause(2000)
 Misc.ScriptRun("bandageAssist.py")
 Misc.Pause(500)
+Misc.ScriptRun("PK Radar.py")
+Misc.Pause(500)
 Misc.ScriptRun("auto_lumberjack.py")
 
 
