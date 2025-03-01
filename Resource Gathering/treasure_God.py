@@ -3,6 +3,12 @@ from System import Byte
 from System import Int32 as int
 import time
 import keyboard
+import datetime
+
+
+#KILL 
+
+#KILL
 
 gem_ids = [0x0F21,0x0F16,0x0F19,0x0F13,0x0F10,0x0F25,0x0F2D,0x0F15,0x0F26,0x0F21] #includes RDA frag 0x0F21
 arms_ids = [
@@ -39,6 +45,7 @@ rdafrag_id = 0x0F21
 relic_id = 0x2AA2
 
 loot = scrolls + gem_ids + arms_ids + regs + [skill_scroll_id, gold_id, blankscroll_id,rdafrag_id,relic_id]
+goldLog = 'C:/Users/Hurley/Documents/GitHub/UOF-Razor-Enhanced-Scripts/Resource Gathering/goldLog.USR'
 
 # Constants for chest graphics
 CHEST_GRAPHICS = [0x74F0,0x0E40,0x6466,0x0E77,0x0E42,0x09AB,0x0E3C,0x0E40,0x09A9,0x0E7C,0x0E7F,0x0E3D,0x0E3F,0x0E43,0x0E7E,0x0E3E,0x0E41]  # Add all graphics here
@@ -49,7 +56,18 @@ MAX_RETRY = 5
 RANGE_MAX = 10
 ITEM_ID_SKILL = "Item ID"
 
+def log_gold_amount():
+    """
+    Gets the current gold count in the backpack and appends it to the log file with a timestamp.
+    """
+    gold_amount = Items.BackpackCount(0x0EED, -1)  # Get gold count (0x0EED is the gold coin ID)
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get current date and time
 
+    with open(goldLog, 'a') as file:  # 'a' mode appends instead of overwriting
+        file.write(f"{timestamp}, {gold_amount}, ImaTool\n") # Write timestamp and gold amount
+
+    Misc.SendMessage(f"Logged: {timestamp} - Gold: {gold_amount}", 53)
+    
 def transferGold():
     Items.UseItem(0x42E87E92)
     Misc.Pause(500)
@@ -185,6 +203,7 @@ def deadCheck():
 def goHome():
     attempt_recall("Winter Lodge")
     Misc.Pause(3000)
+    log_gold_amount()
     gold = Items.FindByID(0x0EED,-1,Player.Backpack.Serial)
     if gold:
         Items.Move(gold,0x002C21FF,-1)

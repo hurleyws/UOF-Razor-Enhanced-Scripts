@@ -11,7 +11,7 @@ import sys
 #ItemSerials
 beetle = 0x004FEA0E
 keepGM = False # true to keep all GM rods too
-keepCount = 100 # how many GM rods to keep
+keepCount = 50 # how many GM rods to keep
 #**************************************************************
 
 error = "Sounds2\error.wav"

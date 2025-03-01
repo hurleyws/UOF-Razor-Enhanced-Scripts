@@ -41,7 +41,7 @@ toolTipsOn = True
 checkVanquishing = False
 checkSlayerWithDamageMod = False #Only slayers with damage mod will be kept
 checkDeedability = False #All deedable weapons will be kept
-trashAllItems = False  # Just looking for XP? Mark true.
+trashAllItems = True  # Just looking for XP? Mark true.
 slayersOnly = True #will only ID slayer weapons (magical props alone will not get ID)
 
 # Set wep choice below (comment out others)
@@ -49,8 +49,8 @@ slayersOnly = True #will only ID slayer weapons (magical props alone will not ge
 #weapToCraft = 'comp'
 #weapToCraft = 'bow'
 #weapToCraft = 'xbow'
-weapToCraft = 'qstaff'
-#weapToCraft = 'club'
+#weapToCraft = 'qstaff'
+weapToCraft = 'club'
 
 ################ Items to keep Setup Section #########################
 

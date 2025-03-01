@@ -208,7 +208,7 @@ def IDweapons():
             
 def sellArms():
     Journal.Clear() 
-    if Player.Weight < 270:
+    if Player.Weight < 250:
         Misc.SendMessage("Not yet ready to sell arms.")
         Misc.Pause(1000)
         return

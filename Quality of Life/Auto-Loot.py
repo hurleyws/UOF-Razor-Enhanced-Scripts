@@ -1,7 +1,7 @@
 from System.Collections.Generic import List
 from System import Int32 as int
 
-getResourcesFlag = True  # Toggle resource collection on/off
+getResourcesFlag = False  # Toggle resource collection on/off
 lootHides = False  # Toggle for looting hides
 lootScales = True  # Toggle for looting scales
 
@@ -12,17 +12,24 @@ GOLD_ID = 0x0EED  # Gold Item ID
 
 LOOTABLE_ITEMS = {
     0x26B4: 'Hide',
+    0x0E86: 'Pickaxe',
+    0x2100: 'Wisp',
+    0x25B6: 'Pixie',
+    0x2581: 'Centaur',
     0x1767: 'Cloth',
     0x0EED: 'Gold',
     0x0DCA: 'Net',
     0x099F: 'SOS',
     0x14F8: 'Rope',
+#    0x0F3F: 'Arrow',
     0x1BF2: 'Ingot',
     0x1081: 'Horned Leather',
     0x14EC: 'Treasure Map',
     0x2831: 'Recipe',
     0x09F1: 'Meat',
     0x14F0: 'Power Scroll',  # Power scroll ID
+    0x0EF3: 'Blank Scroll',
+    0x1F4C: 'Recall Scroll',
     0x483B: 'Rune 1',       # Rune IDs
     0x483E: 'Rune 2',
     0x4841: 'Rune 3',
@@ -59,7 +66,11 @@ LOOTABLE_ITEMS = {
     0x0F2D: 'Gem 7',
     0x0F15: 'Gem 8',
     0x0F26: 'Gem 9',
-    0x0F21: 'Gem 10'
+    0x0F21: 'Gem 10',
+    0x0E41: 'chest 1',
+    0x09AB: 'chest 2',
+    0x0E7C: 'chest 3',
+    0x0E40: 'chest 4'
 }
 
 LOOT_TOOLS = {

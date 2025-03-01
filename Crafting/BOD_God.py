@@ -321,7 +321,6 @@ def bod_run():
         Misc.Pause(1000)
     Player.ChatSay(64,'[recall Winter Lodge')
     Misc.Pause(3000)
-    checkPositionAndMobiles(6802, 3902)
     trashCheck()
     Player.PathFindTo(6802, 3901, 12)
     Misc.Pause(1500)
@@ -409,9 +408,9 @@ def bod_run():
         elif Player.Name == "ImaTool":
             Player.ChatSay("I will make "+str(hour)+" treasure runs in the meantime.")
             Misc.Pause(1000)
-            for x in range(0,hour):
+            for x in range(0,hour * 2):
                 Misc.ScriptRun("treasure_God.py")
-                time.sleep(1*60*60)
+                time.sleep(30*60)
             Player.ChatSay("Now just waiting the final "+str(min)+" minutes.")
             Misc.Pause(1000)
             time.sleep(60*(min+2))
@@ -450,9 +449,9 @@ while True:
             
     elif Player.Name == 'ImaTool':
         Misc.Pause(5000)
-        for x in range(0,5):
+        for x in range(0,10):
             Misc.ScriptRun("treasure_God.py")
-            time.sleep(60*60)
+            time.sleep(30*60)
             
     elif Player.Name == 'Tool Time':
         Misc.ScriptRun("trashPanda.py")

@@ -4,7 +4,7 @@
 
 bod_bag = Player.Backpack.Serial
 #ingot_container = Target.PromptTarget('Target your ingot storage')
-ingot_container_serial = 0x42E90238
+ingot_container_serial = 0x48FAE200
 
 Items.UseItem(bod_bag)
 Misc.Pause(1200)

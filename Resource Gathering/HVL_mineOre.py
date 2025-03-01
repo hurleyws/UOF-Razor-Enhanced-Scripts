@@ -12,10 +12,13 @@ prospect = False
 #BONDED BEETLE??##
 #10=bonded, 9=unbonded#####
 metaSmelting = True
-oreColor = [0x0415,0x0455,0x045f,0x06d8] #0x0000
+oreColor = [0x0000] #0x0000
+stoweColors = [0x0415,0x0455,0x045f,0x06d,0x06d8]
 bondIndex = 10
 
 
+
+pack = Mobiles.FindBySerial(0x005A0EB9)
 beetle = 0x005A0EB9 # watches = 0x000CDBE0
 beetlepack = 0x4C4CF7DB # watches = 0x423495E0
 door = 0x402F1C41
@@ -180,7 +183,40 @@ def useSmelter():
     # Pause briefly after smelting
     Misc.Pause(500)
 
+def stoweOre():
+    # Ensure player dismounts if mounted (e.g., beetlepack is a mount)
+    if Player.Mount:
+        Mobiles.UseMobile(Player.Serial)
+        Misc.Pause(1000)
+        
+    # Wait for the context (beetle or other mobile) to be available.
+    Misc.WaitForContext(beetle, 10000)
 
+    # Bond the beetle (10 if bonded, 9 if non-bonded)
+    Misc.ContextReply(beetle, bondIndex)
+    Misc.Pause(2000)
+    pack = Mobiles.FindBySerial(0x005A0EB9)
+
+
+    # Define the smelters serial
+    ore_storage_serial = 0x41AF9A35  # Replace with the actual smelter serial
+
+
+    for i in Player.Backpack.Contains:
+        if i.ItemID == 0x19B9 and i.Hue in stoweColors:
+    # Move ore from the players backpack to the smelter
+            Items.Move(i,ore_storage_serial,-1)
+            Misc.Pause(1000)
+    
+    # Move ore from the beetlepack to the smelter
+    for i in pack.Backpack.Contains:
+        if i.ItemID == 0x19B9 and i.Hue in stoweColors:
+    # Move ore from the players backpack to the smelter
+            Items.Move(i,ore_storage_serial,-1)
+            Misc.Pause(1000)
+
+    # Pause briefly after smelting
+    Misc.Pause(500)
     
 def goInside():
     Player.PathFindTo(2117, 359, 7)
@@ -192,11 +228,26 @@ def goInside():
         Items.UseItem(door)
         Misc.Pause(500)
     if metaSmelting:
-        Player.PathFindTo(2126,357,4)
-        Misc.Pause(2000)
+        Player.PathFindTo(2123,354,7)
+        Misc.Pause(1500)
+        stoweOre()
+        Player.PathFindTo(2126,357,7)
+        Misc.Pause(2500)
+        checkIngots()
         useSmelter()
     Player.PathFindTo(2127, 355, 7)
     Misc.Pause(2000)
+    
+def checkIngots():
+    Items.UseItem(0x403DC418)
+    Misc.Pause(500)
+    ingotcount = Items.ContainerCount(0x403DC418,0x1BF2,-1)
+    Misc.SendMessage(ingotcount)
+    Misc.Pause(250)
+    if ingotcount > 1000:
+        Items.Move(Items.FindByID(0x1BF2,-1,0x403DC418),Player.Backpack.Serial,1000)
+        Misc.Pause(1000)
+    
 
 def storeAll():
     Items.UseItem(ingotbox)
@@ -410,7 +461,7 @@ while True:
     Player.PathFindTo(2134,353,0)
     Misc.Pause(3000)
     Player.PathFindTo(2121,362,0)
-    Misc.Pause(3000)
+    Misc.Pause(4000)
 
 
     goInside()

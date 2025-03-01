@@ -58,12 +58,12 @@ for i in bodbox.Contains:
 Misc.Pause(500)
 Player.PathFindTo(6803, 3892, 17)
 Misc.Pause(4000)
-Items.UseItem(0x42E90238) #new ingot box
+Items.UseItem(0x48FAE200) #new ingot box
 Misc.Pause(700)
 worldSave()
 hammercount = Items.BackpackCount(0x13E3,0x0000)
 if hammercount < 7:
-    ingots = Items.FindByID(0x1BF2,0,0x42E90238)
+    ingots = Items.FindByID(0x1BF2,0,0x48FAE200)
     Items.Move(ingots,Player.Backpack.Serial,4*(7-hammercount))
     Misc.Pause(500)
     for i in range(7-hammercount):
@@ -77,7 +77,7 @@ if hammercount < 7:
     
 myingots = Items.FindByID(0x1BF2,0,Player.Backpack.Serial)
 if myingots:
-    Items.Move(myingots,0x42E90238,-1)
+    Items.Move(myingots,0x48FAE200,-1)
     Misc.Pause(1000)
 worldSave()
 Misc.ScriptRun("BOD_demigod_preciousMetals.py")

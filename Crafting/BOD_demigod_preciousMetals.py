@@ -4,7 +4,7 @@
 
 bod_bag = Player.Backpack.Serial
 #ingot_container = Target.PromptTarget('Target your ingot storage')
-ingot_container_serial = 0x42E90238
+ingot_container_serial = 0x48FAE200
 
 Items.UseItem(bod_bag)
 Misc.Pause(1200)
@@ -244,7 +244,7 @@ def craft_items():
         
 def restock():
     Misc.Pause(500)
-    if Items.ContainerCount(Player.Backpack.Serial, 0x1BF2, -1) < 30:
+    if Items.ContainerCount(Player.Backpack.Serial, 0x1BF2, ingots) < 30:
         for i in Items.FindBySerial(ingot_container_serial).Contains:
             if i.Hue == ingots and i.ItemID == 0x1BF2:
                 Items.Move(i, Player.Backpack.Serial, 200)
@@ -269,9 +269,12 @@ for i in Items.FindBySerial(bod_bag).Contains:
         material_type()
         quantity()
         item_to_craft()
-        Misc.SendMessage(ingots)  
-        Misc.SendMessage(number_to_make) 
+        Misc.SendMessage(ingots)
+        Misc.Pause(500)  
+        Misc.SendMessage(number_to_make)
+        Misc.Pause(500) 
         Misc.SendMessage(craft)
+        Misc.Pause(500)
         change_metal()
         craft_items()
         return_ingots()

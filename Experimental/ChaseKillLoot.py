@@ -1,86 +1,88 @@
 from System import Int32 as int
 from System.Collections.Generic import List
+import random
+import clr
+import time
 
-# Define constants
-logID = 0x1BDD
-boardID = 0x1BD7
-corpse_ID = 0x2006
-hide_ID = 0x1081
-rawhide_ID = 0x1079
-gold_ID = 0x0EED
-feathers_ID = 0x1BD1
-wood_ID = 0x1BDD
-meat_ID = 0x09F1
-bone_ID = 0x0F7E
-statue_ID = 0x25BF
-lootList = [hide_ID, gold_ID, wood_ID, meat_ID, rawhide_ID, bone_ID, statue_ID]
+CORPSE_GRAPHICS = [0x2006]  # Example graphics for corpses
+RANGE_MAX = 10
+MAX_RETRY = 5
+TIMEOUT = 10
 
-def CheckEnemy():
-    # Create a filter for enemies
-    enemyFilter = Mobiles.Filter()
-    enemyFilter.Bodies = List[int]([0x00E1,0x00ED])  # Replace with appropriate mob IDs
-    enemyFilter.RangeMax = 15  # Set the search range for enemies
-    enemyList = Mobiles.ApplyFilter(enemyFilter)
-    
-    while enemyList.Count > 0:  # While there are enemies in the list
-        enemy = enemyList[0]  # Get the first enemy
-        if enemy:
-            Misc.SendMessage("Engaging " + enemy.Name)
-            Misc.Pause(500)
-            Player.Attack(enemy)
-            Misc.Pause(500)
-            Misc.SendMessage("Attacking")
-            Misc.Pause(500)
 
-            # Combat loop
-            while enemy and enemy.Hits > 0:
-                if Player.DistanceTo(enemy) > 1:
-                    Misc.SendMessage("Moving closer to " + enemy.Name)
-                    Misc.Pause(500)
-                    enemyPosition = enemy.Position
-                    enemyCoords = PathFinding.Route()
-                    enemyCoords.MaxRetry = 5
-                    enemyCoords.StopIfStuck = False
-                    enemyCoords.X = enemyPosition.X
-                    enemyCoords.Y = enemyPosition.Y - 1
-                    PathFinding.Go( enemyCoords )
-                    Misc.Pause(500)
-                Player.Attack(enemy)
-                Misc.Pause(500)
-                enemy = Mobiles.FindBySerial(enemy.Serial)  # Update enemy status
+def findTargets(graphics, range_max):
+    """
+    Finds targets (e.g., chests or corpses) based on specified graphics and range.
+    """
+    targetFilter = Items.Filter()
+    targetFilter.Enabled = True
+    targetFilter.Movable = False
+    targetFilter.OnGround = True
+    targetFilter.Graphics = List[int](graphics)
+    targetFilter.RangeMax = range_max
+    return Items.ApplyFilter(targetFilter)
 
-            # Looting phase
-            LootCorpses()
+def moveToTarget(target, max_retry, timeout):
+    """
+    Moves to a target (e.g., chest or corpse) while checking for danger.
+    """
+    targetPosition = target.Position
+    Misc.SendMessage("Original target position: {}".format(targetPosition))
+
+    directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # Directions to try: Down, Up, Right, Left
+    for dx, dy in directions:
+        targetCoords = PathFinding.Route()
+        targetCoords.MaxRetry = max_retry
+        targetCoords.StopIfStuck = False
+        targetCoords.X = targetPosition.X + dx
+        targetCoords.Y = targetPosition.Y + dy
+        PathFinding.Go(targetCoords)
         
-        # Refresh the enemy list
-        enemyList = Mobiles.ApplyFilter(enemyFilter)
-
-def LootCorpses():
-    # Filter for corpses
-    corpseFilter = Items.Filter()
-    corpseFilter.Graphics = List[int]([corpse_ID])  # Corpse graphic ID
-    corpseFilter.Movable = False
-    corpses = Items.ApplyFilter(corpseFilter)
-
-    for corpse in corpses:
-        Misc.SendMessage("Looting corpse at " + str(corpse.Position))
-        Items.UseItem(corpse)  # Open corpse
-        Misc.Pause(500)
-
-        # Loot items from the corpse
-        for item in corpse.Contains:
-            if item.ItemID in lootList:
-                Misc.SendMessage("Looting item: " + str(item.Name))
-                Items.Move(item.Serial, Player.Backpack.Serial, 0)
-                Misc.Pause(500)
-
-        # Skin the corpse if a knife is available
-        knife = Items.FindByID(0x0EC4, -1, Player.Backpack.Serial)  # Knife ID
-        if knife:
-            Items.UseItem(knife)
+        startTime = time.time()
+        while Player.DistanceTo(target) > 1:
+            currentTime = time.time()
+            if currentTime - startTime > timeout:
+                Misc.SendMessage("Timed out, trying next position")
+                break
             Misc.Pause(500)
-            Target.TargetExecute(corpse)
-            Misc.Pause(500)
+        
+        # Check if the player has successfully moved close enough
+        if Player.DistanceTo(target) <= 1:
+            break
 
-# Run the enemy check and combat loop
-CheckEnemy()
+    
+def followMobile(mobile):
+    """
+    Follows a mobile until the player is within 1 tile of it.
+    """
+    while mobile:
+        if Player.DistanceTo(mobile) > 1:
+            mobilePosition = mobile.Position
+            route = PathFinding.Route()
+            route.MaxRetry = 5
+            route.StopIfStuck = False
+            route.X = mobilePosition.X
+            route.Y = mobilePosition.Y - 1  # Adjust the target position as needed
+            PathFinding.Go(route)
+            Misc.Pause(250)
+            Misc.SendMessage("Pathfinding")  # Short pause to allow smooth following
+            Misc.Pause(250)
+        else:
+            Misc.SendMessage("Distance check OK")  # Short pause to allow smooth following
+            Misc.Pause(2000)
+            break
+    
+#    
+#mobile = Mobiles.FindBySerial(0x001ED03A)
+#
+#while True:
+#    followMobile(mobile)
+#    
+    
+
+corpses = findTargets(CORPSE_GRAPHICS, RANGE_MAX)
+for corpse in corpses:
+    moveToTarget(corpse, MAX_RETRY, TIMEOUT)
+
+
+
