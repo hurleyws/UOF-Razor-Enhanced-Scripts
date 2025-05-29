@@ -13,14 +13,13 @@ prospect = False
 #10=bonded, 9=unbonded#####
 metaSmelting = True
 oreColor = [0x0000] #0x0000
-stoweColors = [0x0415,0x0455,0x045f,0x06d,0x06d8]
+stoweColors = [0x0415,0x0455,0x045f,0x06d,0x06d8,0x06b7,0x097e,0x07d2]
 bondIndex = 10
 
 
-
-pack = Mobiles.FindBySerial(0x005A0EB9)
-beetle = 0x005A0EB9 # watches = 0x000CDBE0
-beetlepack = 0x4C4CF7DB # watches = 0x423495E0
+beetle = 0x005A0EB9 # watches = 0x000CDBE0 #alyer 0x0005A9BB #lucki 0x005A0EB9
+beetlepack = 0x4C4CF7DB # watches = 0x423495E0 #alyer 0x40EDF17A #lucki 0x4C4CF7DB
+pack = Mobiles.FindBySerial(beetle)
 door = 0x402F1C41
 ingotbox = Items.FindBySerial(0x40FA9D34)
 
@@ -37,6 +36,30 @@ smeltFail = 'You burn away the impurities but are left with less useable metal.'
 pickaxe = Items.FindByID(0x0E86,0x0000, -1 ) #can I put minerTools here to search all of these?
 gem_ids = [0x0F21,0x0F16,0x0F19,0x0F13,0x0F10,0x0F25,0x0F2D,0x0F15,0x0F26]
 
+
+#GUMP STUFF
+# Configuration
+target_container = 0x40FA9D34  # Replace with your chest's serial
+item_id = 0x1BF2               # Iron ingots
+item_hue = 0x0000              # Standard iron color
+gump_id = 9270               # Desired gumpID
+
+def count_ingots():
+    total = 0
+    container_items = Items.FindBySerial(target_container).Contains
+    for item in container_items:
+        if item.ItemID == item_id and item.Hue == item_hue:
+            total += item.Amount
+    return total
+
+def show_gump(count):
+    gd = Gumps.CreateGump(True, True, False, False)
+    Gumps.AddBackground(gd, 0, 0, 230, 90, 9270)
+    Gumps.AddBackground(gd, 10, 13, 60, 70, 9012)
+    Gumps.AddLabel(gd, 80, 25, 1152, "Iron Ingots in Chest:")
+    Gumps.AddLabel(gd, 125, 45, 1153, str(count))
+
+    Gumps.SendGump(gump_id, Player.Serial, 400, 300, gd.gumpDefinition, gd.gumpStrings)
 
 def worldSave():
     manualPause = False
@@ -195,7 +218,7 @@ def stoweOre():
     # Bond the beetle (10 if bonded, 9 if non-bonded)
     Misc.ContextReply(beetle, bondIndex)
     Misc.Pause(2000)
-    pack = Mobiles.FindBySerial(0x005A0EB9)
+    pack = Mobiles.FindBySerial(beetle)
 
 
     # Define the smelters serial
@@ -231,7 +254,7 @@ def goInside():
         Player.PathFindTo(2123,354,7)
         Misc.Pause(1500)
         stoweOre()
-        Player.PathFindTo(2126,357,7)
+        Player.PathFindTo(2125,359,7)
         Misc.Pause(2500)
         checkIngots()
         useSmelter()
@@ -257,6 +280,9 @@ def storeAll():
         Items.Move(ingots,ingotbox.Serial,-1)
         Misc.Pause(1000)
         ingots = Items.FindByID(0x1BF2,-1,Player.Backpack.Serial)
+    iron_ingot_count = count_ingots()
+    show_gump(iron_ingot_count)
+
 
 def moveOre():
     ingotbox = Items.FindBySerial(0x40FA9D34)
@@ -612,7 +638,7 @@ while True:
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
     Player.PathFindTo(2102,375,0)
-    Misc.Pause(5000)
+    Misc.Pause(6000)
     Player.PathFindTo(2082,361,0)
     Misc.Pause(5000)
     Mobiles.UseMobile(Player.Serial) 
@@ -680,7 +706,7 @@ while True:
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
     Player.PathFindTo(2106,375,0)
-    Misc.Pause(4000)
+    Misc.Pause(5000)
     #REFRESH WEST HOUSE
     Player.PathFindTo(2082,390,0)
     Misc.Pause(4000)

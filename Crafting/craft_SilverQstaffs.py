@@ -89,7 +89,7 @@ xbow = 0x0F50
 bow = 0x13B2
 qstaff = 0x0E89
 club = 0x13B4
-noColor = 0x0000
+noColor = -1
 self_pack = Player.Backpack.Serial
 self = Player.Serial
 rightHand = Player.CheckLayer('RightHand')
@@ -338,7 +338,8 @@ def craftTools():
     if packIgnots == None or packIgnots.Amount < 10:
         Misc.SendMessage('Need more ignots for tools', 33)
         Misc.Beep()
-        Stop
+        Misc.ScriptStop("craft_SilverQstaffs.py")
+        Misc.Pause(500)
     # crafts tinker set if you only have 1
     if Items.BackpackCount(tink, noColor) < 2:
         Items.UseItem(currentTink.Serial)

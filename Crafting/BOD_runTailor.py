@@ -11,7 +11,7 @@ def worldSave():
 
 Journal.Clear()
 Player.HeadMessage(64,"Running tailor bods in 90 seconds")
-Misc.Pause(90000)       
+#Misc.Pause(90000)       
 worldSave()
 
 Items.UseItem(0x42E88440)

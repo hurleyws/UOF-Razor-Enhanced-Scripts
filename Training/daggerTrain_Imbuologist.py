@@ -5,9 +5,9 @@ from System import Int32 as int
 ################ Items to keep Setup Section #########################
 
 # slayer props, take out the ones you dont want to keep, if you want. Will keep all slayers in list.
-slayerProps = ['Silver','Dragon Slaying','Balron Damnation','Daemon Dismissal','Elemental Ban','Reptilian Death','Terathan','Exorcism','Repond','Fey','Water Dissipation']
+slayerProps = ['Silver']
 # You can move slayers you do not want to keep down here, or just delete them. 
-#'Dragon Slaying','Balron Damnation','Daemon Dismissal',,'Elemental Ban','Reptilian Death','Terathan','Exorcism','Repond','Fey','Water Dissipation'
+#'Dragon Slaying','Balron Damnation','Daemon Dismissal',,'Elemental Ban','Reptilian Death','Terathan','Exorcism','Repond','Fey','Water Dissipation','Dragon Slaying','Balron Damnation','Daemon Dismissal','Elemental Ban','Reptilian Death','Terathan','Exorcism','Repond','Fey','Water Dissipation'
 # Just make sure they have a # in front so the code will ignore them.
 #'Orc Slaying','Ogre Trashing','Earth Shatter','Arachnid', 'Blood Drinking','Lizardman Slaughter','Scorpion\'s Bane','Vacuum','Gargoyle\'s Foe','Troll Slaughter','Flame Dousing','Summer Wind','Spider\'s Death','Elemental Health','Ophidian','Snake\'s Bane'
 
@@ -15,6 +15,8 @@ slayerProps = ['Silver','Dragon Slaying','Balron Damnation','Daemon Dismissal','
 ######################### Do not touch anything below here################
 
 keepSlayers = False
+colors = True
+color = 13 #20 = shadow 13=dullcopper
 
 def slayerCheck():
     if Journal.SearchByType('You have successfully crafted a slayer', 'System'):
@@ -109,8 +111,17 @@ def reTool():
         Misc.SendMessage("Making new smith hammer.")
         Misc.Pause(500)
         while Items.ContainerCount(Player.Backpack.Serial, 0x13E3, -1) < tool_needed:
-            Items.UseItemByID(0x1EB8, 0x0000)  # Open smith tools container
+            Items.UseItemByID(0x1EB8, -1)  # Open smith tools container
             Misc.Pause(500)
+            Gumps.WaitForGump(0x38920abd, 10000)
+            Gumps.SendAction(0x38920abd, 7)
+            if colors:
+                Gumps.WaitForGump(0x38920abd, 10000) #making sure color is selected
+                Gumps.SendAction(0x38920abd, color)
+            else:
+                Gumps.WaitForGump(0x38920abd, 10000) #making sure iron is selected
+                Gumps.SendAction(0x38920abd, 6)
+            Misc.Pause(200)
             Gumps.WaitForGump(949095101, 10000)
             Gumps.SendAction(949095101, 8)  # Select tools menu
             Gumps.WaitForGump(949095101, 10000)
@@ -118,7 +129,7 @@ def reTool():
             Gumps.SendAction(949095101, 93)  # Select Smith Hammer
             Misc.Pause(2000)
         # Make a single dagger to make it last craft
-        Items.UseItemByID(0x13E3, 0x0000)
+        Items.UseItemByID(0x13E3, -1)
         Misc.Pause(500)
         Misc.SendMessage("Using smith hammer.")
         Misc.Pause(500)
@@ -137,13 +148,19 @@ def reTool():
         Misc.SendMessage("Making new tinker tool.")
         Misc.Pause(500)
         while Items.ContainerCount(Player.Backpack.Serial, 0x1EB8, -1) < tool_needed:
-            Items.UseItemByID(0x1EB8, 0x0000)  # Open tinker tools container
-            Misc.Pause(200)
+            Items.UseItemByID(0x1EB8, -1)  
+            Misc.Pause(500)
+            if colors:
+                Gumps.WaitForGump(0x38920abd, 10000)
+                Gumps.SendAction(0x38920abd, 7)
+                Gumps.WaitForGump(0x38920abd, 10000) #making sure color is selected
+                Gumps.SendAction(0x38920abd, color)
+                Misc.Pause(200)
             Gumps.WaitForGump(949095101, 10000)
             Gumps.SendAction(949095101, 23)  # Select Tinker Tool
             Misc.Pause(2000)
         # Make a single dagger to make it last craft
-        Items.UseItemByID(0x13E3, 0x0000)
+        Items.UseItemByID(0x13E3, -1)
         Misc.Pause(500)
         Misc.SendMessage("Using smith hammer.")
         Misc.Pause(500)
@@ -165,7 +182,7 @@ def main():
         Misc.Pause(2500)
 
         # Use smith hammer and set to iron
-        Items.UseItemByID(0x13E3, 0x0000)
+        Items.UseItemByID(0x13E3, -1)
         Misc.Pause(500)
         Misc.SendMessage("Using smith hammer.")
         Misc.Pause(500)
@@ -173,10 +190,16 @@ def main():
         Gumps.SendAction(949095101, 7)  # Set material to iron
         Misc.SendMessage("Selecting metal type menu.")
         Misc.Pause(500)
-        Gumps.WaitForGump(949095101, 10000)
-        Gumps.SendAction(949095101, 6)
-        Misc.SendMessage("Setting metal to iron.")
-        Misc.Pause(500)
+        if colors:
+            Gumps.WaitForGump(949095101, 10000)
+            Gumps.SendAction(949095101, color)  
+            Misc.SendMessage("Setting metal to color.")
+            Misc.Pause(500)
+        else:      
+            Gumps.WaitForGump(949095101, 10000)
+            Gumps.SendAction(949095101, 6)
+            Misc.SendMessage("Setting metal to iron.")
+            Misc.Pause(500)
         Gumps.WaitForGump(949095101, 10000)
         Gumps.SendAction(949095101, 36)
         Misc.SendMessage("Slecting blade menu.")
@@ -190,7 +213,9 @@ def main():
         # Crafting while ingots are available
         while Items.BackpackCount(0x1BF2, -1) > 25:
             worldSave()  # Check for world save
-            reTool()# Ensure tools are stocked   
+            reTool()# Ensure tools are stocked  
+            Items.UseItemByID(0x13E3, -1)
+            Misc.Pause(500) 
             Gumps.WaitForGump(0x38920abd, 10000)
             Gumps.SendAction(0x38920abd, 21)
             Misc.SendMessage("Making last.")
@@ -201,19 +226,26 @@ def main():
             Journal.Clear()
 
             # Recycle unwanted items
-            Items.UseItemByID(0x13E3, 0x0000)
-            Misc.Pause(1000)
-            Gumps.WaitForGump(949095101, 10000)
-            item_to_recycle = Items.FindAllByID(0x0F52, -1, Player.Backpack.Serial,-1)
-            for item in item_to_recycle:
-                Misc.Pause(500)
-                Gumps.SendAction(949095101, 14)  # Recycle option
-                Misc.SendMessage("Selecting recycle function.")
-                Misc.Pause(500)
-                Target.WaitForTarget(500)
-                Target.TargetExecute(item)
-                Misc.SendMessage("Tageting dagger for recycling.")
+            if colors:
+                daggers = Items.FindAllByID(0x0F52,-1,Player.Backpack.Serial,10)
+                for i in daggers:
+                    Items.Move(i,0x4197E8A8,1)
+                    Misc.Pause(1000)
+                    
+            else:
+                Items.UseItemByID(0x13E3, -1)
                 Misc.Pause(1000)
+                Gumps.WaitForGump(949095101, 10000)
+                item_to_recycle = Items.FindAllByID(0x0F52, -1, Player.Backpack.Serial,-1)
+                for item in item_to_recycle:
+                    Misc.Pause(500)
+                    Gumps.SendAction(949095101, 14)  # Recycle option
+                    Misc.SendMessage("Selecting recycle function.")
+                    Misc.Pause(500)
+                    Target.WaitForTarget(500)
+                    Target.TargetExecute(item)
+                    Misc.SendMessage("Tageting dagger for recycling.")
+                    Misc.Pause(1000)
 
 
                 

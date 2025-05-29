@@ -129,11 +129,11 @@ def item_to_craft():
 
 def change_metal():
     Misc.Pause(1200)
-    Items.UseItemByID(smith_hammer, 0000)
+    Items.UseItemByID(smith_hammer, -1)
     Misc.Pause(500)
     Gumps.WaitForGump(949095101, 5000)
     while Gumps.HasGump() == False:
-        Items.UseItemByID(smith_hammer, 0000)
+        Items.UseItemByID(smith_hammer, -1)
         Gumps.WaitForGump(949095101, 5000)
     Gumps.SendAction(949095101,7)
     Misc.Pause(500)
@@ -181,7 +181,7 @@ def craft_items():
         else:
             Misc.SendMessage(str(inbod)+" of "+ str(bod_capacity))
             Misc.SendMessage('Not full yet')
-        Items.UseItemByID(smith_hammer, 0000)
+        Items.UseItemByID(smith_hammer, -1)
         Misc.Pause(500)
         Gumps.SendAction(949095101, smith_dict.get(craft))
         Misc.Pause(2000)
@@ -191,7 +191,7 @@ def craft_items():
         if Journal.Search('You have worn out your tool!'):
             Misc.Pause(1000)
             Journal.Clear()
-            Items.UseItemByID(smith_hammer, 0000)
+            Items.UseItemByID(smith_hammer, -1)
             Misc.Pause(500)
             Gumps.WaitForGump(949095101, 5000)
         target_item = Items.FindByID(itemid_dict.get(craft),-1,Player.Backpack.Serial,-1)
@@ -216,7 +216,7 @@ def craft_items():
                 Misc.Pause(500)
                 Target.TargetExecute(target_item)
                 Misc.Pause(500)
-                Items.UseItemByID(smith_hammer, 0000)
+                Items.UseItemByID(smith_hammer, -1)
                 Misc.Pause(500)
             if Journal.SearchByType('The item has been combined with the deed.', 'System'):
                 Misc.Pause(500)

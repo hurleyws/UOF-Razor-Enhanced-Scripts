@@ -103,111 +103,128 @@ def bodbagCheck():
     Player.ChatSay(64,"I will acquire additional BODs in 5 hours.")
 
 def trainArtisan():
-    Items.UseItem(0x42E87E92)  # Artisan tool or container
+    # Constants
+    TOOL_CONTAINER = 0x42E87E92
+    WOOD_POUCH = 0x41132AE2
+    CRAFTING_INGOT_POUCH = 0x42EA4E24
+    TOOLING_INGOT_POUCH = 0x42E87E92
+    LOG_ID = 0x1BDD
+    INGOT_ID = 0x1BF2
+    DEFAULT_HUE = 0x0000
+
+    # Use containers
+    Items.UseItem(TOOL_CONTAINER)
     Misc.Pause(500)
-    Items.UseItem(0x41132AE2)  # Wood pouch
+    Items.UseItem(WOOD_POUCH)
     Misc.Pause(500)
-    Items.UseItem(0x42EA4E24)  # Ingot pouch
+    Items.UseItem(CRAFTING_INGOT_POUCH)
     Misc.Pause(500)
-    
-    log_count_in_pouch = Items.ContainerCount(0x41132AE2, 0x1BDD, 0x0000)  # Count of logs in the wood pouch
-    ingot_count_in_pouch = Items.ContainerCount(0x42EA4E24, 0x1BF2, 0x0000)  # Count of ingots in the ingot pouch
-    
-    # First check to see if we have enough wood to start
-    if log_count_in_pouch > 1000:
-        ingot_count_in_backpack = Items.BackpackCount(0x1BF2, 0x0000)  # Count of ingots in the backpack
-        ingot_in_storage = Items.FindByID(0x1BF2, 0x0000, 0x42EA4E24)  # Find ingots in storage (artisan tool or container)
-        
-        # Need to have at least 1000 logs in the backpack to start
-        log_count_in_backpack = Items.BackpackCount(0x1BDD, 0x0000)  # Count of logs in the backpack
-        log_in_storage = Items.FindByID(0x1BDD, 0x0000, 0x41132AE2)  # Find logs in storage (wood pouch)
-        
-        if log_count_in_backpack < 1000:
-            Items.Move(log_in_storage, Player.Backpack.Serial, 1000 - log_count_in_backpack)  # Move logs to backpack
+
+    # Get counts from storage pouches
+    logs_in_pouch = Items.ContainerCount(WOOD_POUCH, LOG_ID, DEFAULT_HUE)
+    ingots_in_pouch = Items.ContainerCount(CRAFTING_INGOT_POUCH, INGOT_ID, DEFAULT_HUE)
+
+    # Option 1: Enough logs to proceed with artisan training
+    if logs_in_pouch > 1000:
+        # Ensure backpack has 1000 logs
+        logs_in_backpack = Items.BackpackCount(LOG_ID, DEFAULT_HUE)
+        if logs_in_backpack < 1000:
+            log_item = Items.FindByID(LOG_ID, DEFAULT_HUE, WOOD_POUCH)
+            Items.Move(log_item, Player.Backpack.Serial, 1000 - logs_in_backpack)
             Misc.Pause(1000)
-            
-        # Need at least 200 ingots for tools
-        if ingot_count_in_backpack < 200:
-            Items.Move(ingot_in_storage, Player.Backpack.Serial, 200 - ingot_count_in_backpack)  # Move ingots to backpack
+
+        # Ensure backpack has exactly 200 ingots
+        ingots_in_backpack = Items.BackpackCount(INGOT_ID, DEFAULT_HUE)
+        ingot_item = Items.FindByID(INGOT_ID, DEFAULT_HUE, TOOLING_INGOT_POUCH)
+
+        if ingots_in_backpack < 200:
+            Items.Move(ingot_item, Player.Backpack.Serial, 200 - ingots_in_backpack)
             Misc.Pause(1000)
-        
-        # If I have more than 200 ingots, reduce them to 200
-        if ingot_count_in_backpack > 200:
-            ingot_in_backpack = Items.FindByID(0x1BF2, 0x0000, Player.Backpack.Serial)  # Find ingots in backpack
-            Items.Move(ingot_in_backpack, 0x42EA4E24, ingot_count_in_backpack - 200)  # Move excess ingots back to storage
+        elif ingots_in_backpack > 200:
+            excess = ingots_in_backpack - 200
+            ingot_in_backpack = Items.FindByID(INGOT_ID, DEFAULT_HUE, Player.Backpack.Serial)
+            Items.Move(ingot_in_backpack, TOOLING_INGOT_POUCH, excess)
             Misc.Pause(1000)
-        
-        # The two lines below are necessary since you want to check if you have enough logs and find logs in storage earlier.
-        log_count_in_backpack = Items.BackpackCount(0x1BDD, 0x0000)  # Re-check log count in backpack (after any potential moves)
-        log_in_storage = Items.FindByID(0x1BDD, 0x0000, 0x41132AE2)  # Re-find log storage in case of changes (if needed for future moves)
-        
-        Player.ChatSay("[recall Trainer")  # Recall to the trainer location
+
+        # Recall to trainer and restart script
+        Player.ChatSay("[recall Trainer")
         Misc.Pause(3000)
-        Misc.ScriptRun("trainArtisan.py")  # Restart the training script
-    
-    # Not enough wood, checking to see if enough ingots
-    elif ingot_count_in_pouch > 2500:
-        log_in_backpack = Items.FindByID(0x1BDD, 0x0000, Player.Backpack.Serial)  # Find logs in backpack
-        log_in_storage = Items.FindByID(0x1BDD, 0x0000, 0x41132AE2)  # Find logs in storage (wood pouch)
-        
-        # Enough ingots, putting away any excess logs in backpack
+        Misc.ScriptRun("trainArtisan.py")
+
+    # Option 2: Not enough logs, but enough ingots to run imbuologist
+    elif ingots_in_pouch > 2500:
+        # Move logs out of backpack
+        log_in_backpack = Items.FindByID(LOG_ID, DEFAULT_HUE, Player.Backpack.Serial)
         if log_in_backpack:
-            Items.Move(log_in_backpack, 0x41132AE2, -1)  # Move all logs from backpack back to storage
+            Items.Move(log_in_backpack, WOOD_POUCH, -1)
             Misc.Pause(1000)
-        
-        # Checking ingot counts in the backpack
-        ingot_count_in_backpack = Items.BackpackCount(0x1BF2, 0x0000)  # Count ingots in backpack
-        ingot_in_storage = Items.FindByID(0x1BF2, 0x0000, 0x42EA4E24)  # Find ingots in storage (ingot pouch)
-        
-        # Need 2000 ingots to start, moving that amount to backpack
-        if ingot_count_in_backpack < 2000:
-            Items.Move(ingot_in_storage, Player.Backpack.Serial, 2000 - ingot_count_in_backpack)  # Move enough ingots to reach 2000 in backpack
+
+        # Ensure 2000 ingots in backpack
+        ingots_in_backpack = Items.BackpackCount(INGOT_ID, DEFAULT_HUE)
+        ingot_item = Items.FindByID(INGOT_ID, DEFAULT_HUE, CRAFTING_INGOT_POUCH)
+
+        if ingots_in_backpack < 2000:
+            Items.Move(ingot_item, Player.Backpack.Serial, 2000 - ingots_in_backpack)
             Misc.Pause(1000)
-        
-        Misc.ScriptRun("daggerTrain_Imbuologist.py")  # Run the imbuologist script
+
+        # Run dagger training
+        Misc.ScriptRun("daggerTrain_Imbuologist.py")
+
 
         
 
 def repairCheck():
     repairPouch = Items.FindBySerial(0x41547DA9)
-    
+
     if repairPouch:
-        prop_list = Items.GetPropStringByIndex(repairPouch,4)
+        prop_list = Items.GetPropStringByIndex(repairPouch, 4)
         prop_list_split = prop_list.split()
-        items = prop_list_split[0]
-        items = int(items)
-    
-        if items > 0 :
+        items = int(prop_list_split[0]) if prop_list_split else 0
+
+        if items > 0:
             Player.ChatSay("Looks like repairs are in order.")
             Misc.Pause(1500)
-            Player.PathFindTo(6801, 3898, 17)
-            Misc.Pause(2000)
+            Player.PathFindTo(6802, 3892, 17)
+            Misc.Pause(4000)
             Items.UseItem(repairPouch)
             Misc.Pause(500)
-            staff = Items.FindByID(0x0E89,-1,repairPouch.Serial)
-            Misc.Pause(200)
-            if staff:
-                Items.Move(staff,Player.Backpack.Serial,1)
+
+            # Find all daggers in the repair pouch
+            dagger_candidates = Items.FindItemsByID(0x0F52, -1, repairPouch.Serial)
+
+            silver_dagger = None
+            for dagger in dagger_candidates:
+                props = Items.GetPropStringList(dagger)
+                if any("silver" in prop.lower() for prop in props):
+                    silver_dagger = dagger
+                    break
+
+            if silver_dagger:
+                Items.Move(silver_dagger, Player.Backpack.Serial, 1)
                 Misc.Pause(1000)
-            staff = Items.FindByID(0x0E89,-1,Player.Backpack.Serial)
-            if staff:
-                Misc.Pause(200)
-                Items.UseItemByID(0x1034,-1)
-                Misc.Pause(500)
-                Gumps.WaitForGump(949095101, 10000)
-                Gumps.SendAction(949095101, 42)
-                Misc.Pause(500)
-                Target.TargetExecute(staff)
-                Misc.Pause(500)
-                Gumps.WaitForGump(949095101, 10000)
-                Gumps.SendAction(949095101, 0)
-                Misc.Pause(500)
-                Items.Move(staff,0x42EA55BA,1)
-                Misc.Pause(1000)
-                Player.ChatSay("This looks good as new.")
-                Misc.Pause(1000)
+
+                # Confirm it's in the backpack
+                dagger = Items.FindBySerial(silver_dagger.Serial)
+                if dagger:
+                    Misc.Pause(200)
+                    Items.UseItemByID(0x13E3, -1)  # Repair deed
+                    Misc.Pause(500)
+                    Gumps.WaitForGump(0x38920abd, 10000)
+                    Gumps.SendAction(0x38920abd, 42)  # Repair option
+                    Target.WaitForTarget(10000, False)
+                    Target.TargetExecute(dagger)
+                    Misc.Pause(500)
+                    Gumps.WaitForGump(0x38920abd, 10000)
+                    Gumps.SendAction(0x38920abd, 0)  # Close
+                    Misc.Pause(500)
+                    Items.Move(dagger, 0x411F0FDE, 1)  # Move back to original container
+                    Misc.Pause(1000)
+                    Player.ChatSay("This looks good as new.")
+                    Misc.Pause(1000)
+
             Player.PathFindTo(6804, 3897, 17)
             Misc.Pause(2000)
+
 
 def trashCheck():
     weapon_keywords = ["mace", "axe", "katana", "halberd", "kryss"]
@@ -416,8 +433,12 @@ def bod_run():
             time.sleep(60*(min+2))
             Journal.Clear()
         elif Player.Name == "Tool Time":
-            Misc.ScriptRun("trashPanda.py")
-            time.sleep(60*sleepTime)
+            for x in range(0,hour * 2):
+                Player.ChatSay("I have more than an hour to wait, making a farm run.")
+                Misc.Pause(1000)
+                Misc.ScriptRun("FarmGod.py")
+                time.sleep(30*60)
+            time.sleep(60*min)
             Journal.Clear()
         elif Player.Name == "Realtree":
             trainArtisan()
@@ -454,8 +475,10 @@ while True:
             time.sleep(30*60)
             
     elif Player.Name == 'Tool Time':
-        Misc.ScriptRun("trashPanda.py")
-        time.sleep((5 * 3600) + (5 * 60))#5 hours and 5 minutes
+        Misc.Pause(2000)
+        for x in range(10):
+            Misc.ScriptRun("FarmGod.py")
+            time.sleep(30*60) 
         
     else:
         Player.ChatSay(64,"I will acquire additional BODs in 5 hours.")

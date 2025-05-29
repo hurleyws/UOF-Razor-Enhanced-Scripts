@@ -3,13 +3,13 @@ from System import Int32 as int
 
 getResourcesFlag = False  # Toggle resource collection on/off
 lootHides = False  # Toggle for looting hides
-lootScales = True  # Toggle for looting scales
+lootScales = False  # Toggle for looting scales
 
 # SETTINGS
 CORPSE_ID = 0x2006
 GOLD_ID = 0x0EED  # Gold Item ID
 
-
+# LOOTABLE ITEMS
 LOOTABLE_ITEMS = {
     0x26B4: 'Hide',
     0x0E86: 'Pickaxe',
@@ -21,42 +21,16 @@ LOOTABLE_ITEMS = {
     0x0DCA: 'Net',
     0x099F: 'SOS',
     0x14F8: 'Rope',
-#    0x0F3F: 'Arrow',
+    0xBB7C: 'Oxygen',
     0x1BF2: 'Ingot',
     0x1081: 'Horned Leather',
     0x14EC: 'Treasure Map',
     0x2831: 'Recipe',
-    0x09F1: 'Meat',
-    0x14F0: 'Power Scroll',  # Power scroll ID
+    0x14F0: 'Power Scroll',
     0x0EF3: 'Blank Scroll',
     0x1F4C: 'Recall Scroll',
-    0x483B: 'Rune 1',       # Rune IDs
-    0x483E: 'Rune 2',
-    0x4841: 'Rune 3',
-    0x4844: 'Rune 4',
-    0x4847: 'Rune 5',
-    0x484A: 'Rune 6',
-    0x484D: 'Rune 7',
-    0x4850: 'Rune 8',
-    0x4853: 'Rune 9',
-    0x4856: 'Rune 10',
-    0x4859: 'Rune 11',
-    0x485C: 'Rune 12',
-    0x485F: 'Rune 13',
-    0x4862: 'Rune 14',
-    0x4865: 'Rune 15',
-    0x4868: 'Rune 16',
-    0x486B: 'Rune 17',
-    0x4871: 'Rune 18',
-    0x486E: 'Rune 19',
-    0x4874: 'Rune 20',
-    0x4877: 'Rune 21',
-    0x487A: 'Rune 22',
-    0x487D: 'Rune 23',
-    0x4880: 'Rune 24',
-    0x4883: 'Rune 25',
-    0x2260: 'Skill Scroll',  # Skill scroll ID
-    0x2AA2: 'Relic',         # Relic ID
+    0x2260: 'Skill Scroll',
+    0x2AA2: 'Relic',
     0x0F21: 'Gem 1',
     0x0F16: 'Gem 2',
     0x0F19: 'Gem 3',
@@ -67,18 +41,64 @@ LOOTABLE_ITEMS = {
     0x0F15: 'Gem 8',
     0x0F26: 'Gem 9',
     0x0F21: 'Gem 10',
+    0x0F86: "root",
+    0x0F7B: "moss",
+    0x0F7A: "pearl",
+    0x0F88: "shade",
+    0x0F84: "garlic",
+    0x0F85: "ginseng",
+    0x0F8C: "ash",
+    0x0F8D: "silk",
     0x0E41: 'chest 1',
     0x09AB: 'chest 2',
     0x0E7C: 'chest 3',
-    0x0E40: 'chest 4'
+    0x0E40: 'chest 4',
+    0x0DF8: 'wool',
+    0x14FC: 'lockpick'
+}
+
+# EXCLUSION LIST (Items that should NEVER be looted even if they have a non-zero hue)
+EXCLUSION_LIST = {
+    0x19B9,  # ore
+    0x141B, # orc mask
+    0x13EC, #ringmail tunic  
+    0x13EB, #gloves
+    0x1544, #skullcap
+    0x1711, #thighboots
+    0x1F03, #robe
+    0x5744, #worm
+    0x1718, #wizard hat
+    0x170F, #shoes
+    0x170D, #sandals
+    0x26B8, #seer powder
+    0x1EA7, #obsidian
+    
+    
 }
 
 LOOT_TOOLS = {
-    'salvage_hook': 0x0EC4,  # Example item ID for salvage hook
-    'hatchet': 0x0F52        # Example item ID for hatchet
+    'salvage_hook': 0x0EC4,
+    'hatchet': 0x0F52
 }
 
 # FUNCTIONS
+
+def should_loot_item(item):
+    """
+    Checks if the item should be looted.
+    - Ore (0x19B9) is only looted if it has a specific hue (bronze or agapite).
+    - All other items must not be in the exclusion list and must be in the loot list or have a non-zero hue.
+    """
+    # Special case: allow specific ore hues
+    if item.ItemID == 0x19B9:  # Ore
+        return item.Hue in [0x06D8, 0x097E]  # bronze or agapite
+
+    # Skip all other items in the exclusion list
+    if item.ItemID in EXCLUSION_LIST:
+        return False
+
+    # Loot if explicitly listed or has a non-zero hue
+    return item.ItemID in LOOTABLE_ITEMS or item.Hue != 0x0000
 
 def find_corpses():
     """Finds all nearby corpses matching the specified filter."""
@@ -91,36 +111,24 @@ def find_corpses():
 
     return Items.ApplyFilter(corpse_filter)
 
-def should_loot_item(item):
-    """Checks if the item should be looted based on its ItemID."""
-    return item.ItemID in LOOTABLE_ITEMS
-
 def loot_corpse(corpse):
     """Loots items from the given corpse based on the loot list."""
     looted_items = []
+    
     for item in corpse.Contains:
         if should_loot_item(item):
-            Items.Move(item, Player.Backpack, -1)  # Move stackable items (-1 for all)
-            looted_items.append(LOOTABLE_ITEMS[item.ItemID])
+            Items.Move(item, Player.Backpack.Serial, -1)  # Move stackable items (-1 for all)
+            item_name = LOOTABLE_ITEMS.get(item.ItemID, f"Unknown ({hex(item.ItemID)})")
+            looted_items.append(item_name)
             Misc.Pause(750)
 
     if looted_items:
         Misc.SendMessage(f"Looted: {', '.join(looted_items)}", 33)
+        Misc.Pause(500)
 
 def is_gold_still_on_corpse(corpse):
     """Checks if gold is still present on the corpse."""
-    for item in corpse.Contains:
-        if item.ItemID == GOLD_ID:
-            return True
-    return False
-
-def use_tool(tool_name):
-    """Uses the specified tool (e.g., hatchet, salvage hook) from the player's backpack."""
-    tool_id = LOOT_TOOLS.get(tool_name)
-    if Items.FindByID(tool_id, -1, Player.Backpack.Serial):
-        Items.UseItemByID(tool_id, -1)
-        Misc.Pause(200)
-
+    return any(item.ItemID == GOLD_ID for item in corpse.Contains)
 
 def getResources(corpse):
     """Collects resources from the specified corpse."""
@@ -138,20 +146,19 @@ def getResources(corpse):
     Misc.Pause(500)
 
     for item in corpse.Contains:
-        if lootHides and item.ItemID == 0x1079:  # Hides
+        if lootHides and item.ItemID == 0x1079 and item.Hue == 0x0000:  # Hides
             Misc.SendMessage(f"Looting hides: {item.Serial}", 77)
             Items.Move(item, Player.Backpack.Serial, -1)
             Misc.Pause(1000)
             Items.UseItem(scissors)
             Misc.Pause(500)
-            Target.TargetExecute(item)
+            Target.TargetExecute(Items.FindByID(0x1079,-1,Player.Backpack.Serial))
             Misc.Pause(500)
         
         if lootScales and item.ItemID == 0x26B4:  # Scales
             Misc.SendMessage(f"Looting scales: {item.Serial}", 77)
             Items.Move(item, Player.Backpack.Serial, -1)
             Misc.Pause(1000)
-
 
 def main():
     """Main function to find and loot corpses."""
@@ -162,7 +169,7 @@ def main():
         Misc.Pause(500)
         loot_corpse(corpse)
 
-        if getResourcesFlag:  # Check the toggle for resource collection
+        if getResourcesFlag:
             getResources(corpse)
 
         if not is_gold_still_on_corpse(corpse):
@@ -172,4 +179,3 @@ def main():
 while True:
     main()
     Misc.Pause(1000)
-

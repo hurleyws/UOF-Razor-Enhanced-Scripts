@@ -63,7 +63,7 @@ arms_ids = [
 
 
 #supply counts
-IDchest_serial = 0x43DC9B86
+IDchest_serial = 0x4342B03E
 regchest = Items.FindBySerial(0x4043C469)
 tinkchest = Items.FindBySerial(0x43DE1F06)
 root = Items.BackpackCount(0x0F7A,-1)
@@ -88,6 +88,22 @@ Journal.Clear()
 emergency_charges = 0
 Items.UseItem(regchest)
 Misc.Pause(500)
+
+# Function to balance reagent quantities
+def balance_reagents(item_id, current_quantity, desired_quantity, stock_container, player_serial):
+    if current_quantity < desired_quantity:
+        # Restock from the stock container
+        quantity_to_move = desired_quantity - current_quantity
+        Items.Move(Items.FindByID(item_id, -1, stock_container.Serial), player_serial, quantity_to_move)
+        Misc.Pause(1000)
+        Misc.SendMessage(f"Restocked {quantity_to_move} of {hex(item_id)}", 55)
+
+    elif current_quantity > desired_quantity:
+        # Move excess back to stock container
+        excess_quantity = current_quantity - desired_quantity
+        Items.Move(Items.FindByID(item_id, -1, player_serial), stock_container.Serial, excess_quantity)
+        Misc.Pause(1000)
+        Misc.SendMessage(f"Moved {excess_quantity} excess {hex(item_id)} back to stock", 33)
 
 
 # Function to restock an item
@@ -132,16 +148,18 @@ if character_name in restock_requirements:
     current_quantities["emergency_charges"] = emergency_charges
 
     # Loop through each item and restock as needed
+    # Loop through each item and restock as needed
     for item_name, desired_quantity in character_config["items"].items():
         item_id = item_ids[item_name]
-        restock_item(item_id, current_quantities[item_name], desired_quantity, regchest.Serial, Player.Backpack.Serial, runebook_serial)
+        balance_reagents(item_id, current_quantities[item_name], desired_quantity, regchest, Player.Backpack.Serial)
+
 else:
     Player.HeadMessage(64, "No restock configuration for this character.")
 
 
 
 # Special handling for flute, as its not part of the generic restocking
-if Player.Name in ["Alyer Base", "SnukeInSniz"] and flute < 1:
+if Player.Name in ["SnukeInSniz"] and flute < 1:
     Items.UseItem(tinkchest)
     Misc.Pause(500)
     Items.UseItem(0x40894A2D)

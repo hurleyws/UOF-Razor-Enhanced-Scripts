@@ -119,6 +119,11 @@ def hammer_check():
             errorCheck()
             Items.UseItemByID(tinker_tools)
             Misc.Pause(500)
+            Gumps.WaitForGump(0x38920abd, 10000)
+            Gumps.SendAction(0x38920abd, 7)
+            Gumps.WaitForGump(0x38920abd, 10000) #making sure iron is selected
+            Gumps.SendAction(0x38920abd, 6)
+            Misc.Pause(200)
             Gumps.WaitForGump(949095101, 10000)
             Gumps.SendAction(949095101, 93)
             Misc.Pause(2000)
@@ -137,6 +142,11 @@ def tinker_check():
             errorCheck()
             Items.UseItemByID(tinker_tools)
             Misc.Pause(500)
+            Gumps.WaitForGump(0x38920abd, 10000)
+            Gumps.SendAction(0x38920abd, 7)
+            Gumps.WaitForGump(0x38920abd, 10000) #making sure iron is selected
+            Gumps.SendAction(0x38920abd, 6)
+            Misc.Pause(200)
             Gumps.WaitForGump(949095101, 10000)
             Gumps.SendAction(949095101, 23)
             Misc.Pause(2000)
@@ -166,11 +176,11 @@ def item_to_craft():
 
 def change_metal():
     Misc.Pause(1200)
-    Items.UseItemByID(smith_hammer, 0000)
+    Items.UseItemByID(smith_hammer, -1)
     Misc.Pause(500)
     Gumps.WaitForGump(949095101, 5000)
     while Gumps.HasGump() == False:
-        Items.UseItemByID(smith_hammer, 0000)
+        Items.UseItemByID(smith_hammer, -1)
         Gumps.WaitForGump(949095101, 5000)
     Gumps.SendAction(949095101,7)
     Misc.Pause(500)
@@ -204,7 +214,7 @@ def fill_bod():
 def craft_items():
     restock()
     Misc.Pause(1000)
-    Items.UseItemByID(smith_hammer, 0000)
+    Items.UseItemByID(smith_hammer, -1)
     Misc.Pause(500)
     Gumps.SendAction(949095101, cat_dict.get(craft))
     Misc.Pause(1000)
@@ -221,7 +231,7 @@ def craft_items():
             Misc.SendMessage(str(inbod)+" of "+ str(bod_capacity))
             Misc.SendMessage('Not full yet')
         Misc.Pause(500)
-        Items.UseItemByID(smith_hammer, 0000)
+        Items.UseItemByID(smith_hammer, -1)
         Misc.Pause(500)
         Gumps.SendAction(949095101, smith_dict.get(craft))
         #use hammer, create the specific item
@@ -230,12 +240,12 @@ def craft_items():
         if Journal.Search('You have worn out your tool!'):
             Misc.Pause(1000)
             Journal.Clear()
-            Items.UseItemByID(smith_hammer, 0000)
+            Items.UseItemByID(smith_hammer, -1)
             Misc.Pause(500)
             Gumps.WaitForGump(949095101, 5000)
         #find the crafted item
         target_item = Items.FindByID(itemid_dict.get(craft),-1,Player.Backpack.Serial,-1)
-        #verify that it's exceptional
+        #verify that its exceptional
         if target_item and Items.GetPropValue(target_item,'Crafted By') == 1:
             Misc.Pause(500)
             #if it is, open the BOD menu
@@ -260,7 +270,7 @@ def craft_items():
                 Misc.Pause(500)
                 Target.TargetExecute(target_item)
                 Misc.Pause(500)
-                Items.UseItemByID(smith_hammer, 0000)
+                Items.UseItemByID(smith_hammer, -1)
                 Misc.Pause(500)
             if Journal.SearchByType('The item has been combined with the deed.', 'System'):
                 continue

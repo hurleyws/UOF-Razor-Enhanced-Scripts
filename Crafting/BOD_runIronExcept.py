@@ -44,6 +44,11 @@ if hammercount < 7:
     for i in range(7-hammercount):
         Items.UseItemByID(0x1EB8,0)
         Misc.Pause(500)
+        Gumps.WaitForGump(0x38920abd, 10000)
+        Gumps.SendAction(0x38920abd, 7)
+        Gumps.WaitForGump(0x38920abd, 10000) #making sure iron is selected
+        Gumps.SendAction(0x38920abd, 6)
+        Misc.Pause(200)
         Gumps.SendAction(949095101, 93)
         Misc.Pause(2000)
     Misc.Pause(500)

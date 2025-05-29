@@ -221,6 +221,10 @@ def check_tools(thebod):
         tinkerTool = find_tool(tooling['tinker']["itemid"])
         Items.UseItem(tinkerTool)
         Gumps.WaitForGump( 0, 2000 )
+        Gumps.SendAction(0, 7)
+        Gumps.WaitForGump(0, 10000) #making sure iron is selected
+        Gumps.SendAction(0, 6)
+        Misc.Pause(200)
         Gumps.SendAction(  0, tooling[thebod["Tool"]]["menu"] )
         Gumps.WaitForGump( 0, 2000 )
         Gumps.SendAction(  0, tooling[thebod["Tool"]]["item"] )
@@ -231,6 +235,10 @@ def check_tools(thebod):
         tinkerTool = find_tool(tooling['tinker']["itemid"])
         Items.UseItem(tinkerTool)
         Gumps.WaitForGump( 0, 2000 )
+        Gumps.SendAction(0, 7)
+        Gumps.WaitForGump(0, 10000) #making sure iron is selected
+        Gumps.SendAction(0, 6)
+        Misc.Pause(200)
         Gumps.SendAction(  0, tooling["tinker"]["menu"] )
         Gumps.WaitForGump( 0, 2000 )
         Gumps.SendAction(  0, tooling["tinker"]["item"] )
