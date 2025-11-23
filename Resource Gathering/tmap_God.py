@@ -8,6 +8,9 @@ from System.Collections.Generic import List
 import time
 import random
 
+pet1_Serial = 0x00136CD2 #Drago-0x00136CD2 Spin-0x0001DDFA
+pet2_Serial = 0x00000A14 #Steed-0x00000A14 Shuck-0x0008064C
+
 book1_16 = 0x402B008A
 book17_32 = 0x402B06DE
 book33_48 = 0x402B0AC6
@@ -50,14 +53,14 @@ from System.Collections.Generic import List
 
 def checkPetHealth():
     # Find pets by their serial
-    Shuck = Mobiles.FindBySerial(0x0008064C)  # Replace with actual serial
-    Spin = Mobiles.FindBySerial(0x0001DDFA)  # Replace with actual serial
+    pet1 = Mobiles.FindBySerial(pet1_Serial)  # Replace with actual serial
+    pet2 = Mobiles.FindBySerial(pet2_Serial)  # Replace with actual serial
 
     healing_active = False  # Track if healing is in progress
     healing_pet = None  # Track which pet is being healed
 
 
-    pets = [Shuck, Spin]
+    pets = [pet2, pet1]
 
     # Check players health and act accordingly
     if Player.Hits < 25:
@@ -152,7 +155,7 @@ def attack_nearest_mobile():
         nearby_mobiles = get_nearby_mobiles()
 
         # Filter out "Alyer Base"
-        valid_mobiles = [mob for mob in nearby_mobiles if mob.Name != "Alyer Base"]
+        valid_mobiles = [mob for mob in nearby_mobiles if mob.Name not in ["Alyer Base", "Spin", "Shuck","2Us","rBelong"]]
 
         if not valid_mobiles:
             Misc.SendMessage("No valid targets found.", 33)

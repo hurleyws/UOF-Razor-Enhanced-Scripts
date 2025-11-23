@@ -5,26 +5,17 @@ import time
 import random
 import datetime
 
-pet1 = "Spin"
-pet1_Serial = 0x0001DDFA
-pet2 = "Shuck"
-pet2_Serial = 0x0008064C
+# Global heal flag
+needs_heal = False
 
-now = datetime.datetime.now()
-current_time = now.time()
+worldSavePause = False
 
-start_quiet = datetime.datetime.strptime("22:30", "%H:%M").time()
-end_quiet = datetime.datetime.strptime("08:00", "%H:%M").time()
-
-if current_time >= start_quiet or current_time < end_quiet:
-    farmingEvil = False
-else:
-    farmingEvil = True
-
-farmingFey = True
-
+primaryPet = 0x00136CD2 #drago 0x00136CD2
+secondaryPet = 0x00000A14 #steed 0x00000A14
 
 goldLog = 'C:/Users/Hurley/Documents/GitHub/UOF-Razor-Enhanced-Scripts/Resource Gathering/goldLog.USR'
+
+gem_ids = [0x0F21,0x0F16,0x0F19,0x0F13,0x0F10,0x0F25,0x0F2D,0x0F15,0x0F26,0x0F21] 
 
 pchest = [0x0E41,0x09AB,0x0E7C,0x0E40]
 
@@ -38,54 +29,89 @@ creature_statue_ids = {0x2100, 0x25B6, 0x2581, 0x1BF2, 0x14EC,0x25D7,0x20ED}  # 
 
 rune_destination = 0x417D8A37  # Destination container for runes
 statue_destination = 0x42EA55BA  # Destination container for statues
-
-pet1 = Mobiles.FindBySerial(pet1_Serial)
-pet2 = Mobiles.FindBySerial(pet2_Serial)
-Misc.IgnoreObject(pet1)
-Misc.Pause(100)
-Misc.IgnoreObject(pet2)
-Misc.Pause(100)
-worldSavePause = False
 BandageHeal.Start()
 
-def spinBolts():   
-    rawmats = [0x0DF9, 0x1A9C, 0x1A9D, 0x0DF8]
+def countItemsByID(itemIDs):
+    """
+    Counts the total number of specified items by their IDs in the players backpack.
+    
+    Args:
+    - itemIDs (list): A list of item IDs to count in the backpack.
+    
+    Returns:
+    - int: The total count of specified items.
+    """
+    totalCount = 0
 
-    for item_id in rawmats:
-        for item in Player.Backpack.Contains:
-            if item.ItemID == item_id:
-                while item.Amount > 0:  # Continue processing the stack until depleted
-                    worldSave()
-                    Items.UseItem(item)
-                    Misc.Pause(500)
-                    Target.TargetExecute(0x42E7B2C6)
-                    Misc.Pause(4000)
-                    updated_item = Items.FindByID(item_id,-1,Player.Backpack.Serial)  # Update the item reference to get the current state
-                    if updated_item is not None:
-                        item = updated_item
-                    else:
-                        break
+    # Iterate over each item ID in the list
+    for itemID in itemIDs:
+        # Count items in the backpack matching the current item ID
+        # Assuming color is not specified (-1) and searching recursively
+        count = Items.ContainerCount(Player.Backpack.Serial, itemID, -1, True)
+        
+        # Add the count for this item ID to the total count
+        totalCount += count
 
-    for item in Player.Backpack.Contains:
-        if item.ItemID == 0x0FA0 or item.ItemID == 0x0E1D:
-            while item.Amount > 0:
-                worldSave()
-                Items.UseItem(item)
-                Misc.Pause(500)
-                Target.TargetExecute(0x42E7A998)
-                Misc.Pause(500)
-                updated_item = Items.FindByID(item.ItemID,-1,Player.Backpack.Serial)
-                if updated_item is not None:
-                    item = updated_item
-                else:
-                    break
+    # Return the total count of items
+    return totalCount
 
-def deadPetCheck():
-    if pet1.Hits <= 5 or pet2.Hits <= 5:
+
+def sellGems():
+    totalGems = countItemsByID(gem_ids)
+    if totalGems > 20:
+        SellAgent.Enable()
+        attempt_recall("Sell Gems")
+        Misc.Pause(3000)
+        Misc.WaitForContext(0x0026BFC1, 10000)
+        Misc.ContextReply(0x0026BFC1, 2)
+        Misc.Pause(500)
+        Misc.WaitForContext(0x0026CC5D, 10000)
+        Misc.ContextReply(0x0026CC5D, 2)
+        Misc.Pause(1000)
+        Player.ChatSay(26, 'I thank thee.')
+        Misc.Pause(500)
+
+def checkSelfHealth():
+    global needs_heal
+    if Player.Poisoned:
+        needs_heal = True
+        return
+
+    if Player.Hits < Player.HitsMax and not needs_heal:
+        if Player.Hits <= Player.HitsMax - 25:
+            needs_heal = True
+
+
+def tryHealIfSafe():
+    global needs_heal
+    if needs_heal:
+        if Player.Poisoned:
+            Spells.CastMagery("Cure")
+            Misc.Pause(800)
+            Target.WaitForTarget(1000, False)
+            Target.Self()
+            Misc.Pause(200)
+            checkSelfHealth()
+        else:
+            Spells.CastMagery("Greater Heal")
+            Misc.Pause(800)
+            Target.WaitForTarget(1000, False)
+            Target.TargetExecute(Player.Serial)
+            Misc.Pause(200)
+        needs_heal = False
+
+def deadCheck():
+    if Player.IsGhost:
+        Misc.ScriptStop("petTrainer_while.py")
+        Misc.Pause(500)
+        Misc.ScriptStop("petTrainer.py")
+        Misc.Pause(500)
+    if pet1 and pet1.Hits <= 5 or pet2 and pet2.Hits <= 5:
         Misc.SendMessage("One or both pets are dead. Heading home.", 33)
         Misc.Pause(500)
         goHome()
-
+        Misc.ScriptStop("petTrainer.py")
+        Misc.Pause(500)
 
 
 def log_gold_amount():
@@ -99,6 +125,7 @@ def log_gold_amount():
         file.write(f"{timestamp}, {gold_amount}\n")  # Write timestamp and gold amount
 
     Misc.SendMessage(f"Logged: {timestamp} - Gold: {gold_amount}", 53)
+    Misc.Pause(300)
 
 # Call the function to log gold
 
@@ -142,8 +169,6 @@ def findCorpses():
     return corpse_list
 
 
-
-
 def moveToCorpse(max_loops=10, max_retry=5, overall_timeout=30, individual_timeout=5):
     """
     Continuously finds and moves to the closest corpse within range using directional movement.
@@ -170,9 +195,12 @@ def moveToCorpse(max_loops=10, max_retry=5, overall_timeout=30, individual_timeo
                 Misc.SendMessage(f"Corpse {corpse.Serial} no longer exists.", 33)
                 Misc.Pause(500)
                 continue  # Skip if corpse is gone
-            
+                
+            attackEvil()
+            detectMobiles()
             Misc.SendMessage(f"Moving to closest corpse: {corpse.Serial}", 33)
             Misc.Pause(500)
+            
 
             # Move towards the corpse until within 2 tiles
             start_time = time.time()
@@ -193,11 +221,11 @@ def moveToCorpse(max_loops=10, max_retry=5, overall_timeout=30, individual_timeo
                     Misc.SendMessage(f"Corpse {corpse.Serial} disappeared. Skipping.", 33)
                     Misc.Pause(500)
                     break
+                    
+                Misc.Pause(500)
 
-                direction = calculateDirectionToRun(corpse)
-                if direction:
-                    Player.Walk(direction)
-                    Misc.Pause(500)  
+                Player.PathFindTo(corpse.Position.X,corpse.Position.Y,corpse.Position.Z)
+                
 
                 deadCheck()  # Ensure safe movement
 
@@ -205,12 +233,11 @@ def moveToCorpse(max_loops=10, max_retry=5, overall_timeout=30, individual_timeo
                 Misc.SendMessage(f"✅ Reached corpse: {corpse.Serial}", 65)
                 Misc.Pause(500)  # Short delay before processing next corps
                 break  # Stop processing once a corpse is reached
+                
+            
 
     Misc.SendMessage("✅ Finished processing all corpses or hit max loops.", 65)
     Misc.Pause(500)
-
-
-
 
 
 
@@ -226,12 +253,15 @@ def worldSave():
         if Journal.SearchByType('pause', 'Regular'):
             manualPause = True
             Misc.SendMessage('Manual pause initiated.', 33)
+            Misc.Pause(300)
         else:
             Misc.SendMessage('Pausing for world save.', 33)
+            Misc.Pause(300)
         
         # Loop until a resume condition occurs
         while True:
             Misc.Pause(1000)
+            attackEvil()
 
             # If world save finishes and were NOT in manual pause, resume
             if not manualPause and Journal.SearchByType('World save complete.', 'System'):
@@ -249,294 +279,360 @@ def worldSave():
 
 
 
-def detectGreyNames():
-    """
-    Detects mobiles with notoriety codes 4 or 5 (grey names) and sends a message if any are found.
-    Ignores mobs that have "slave" in their property list.
-    """
+def detectMobiles():
     # Create the filter
     mobFilter = Mobiles.Filter()
     mobFilter.Enabled = True
     mobFilter.IsHuman = True
-    mobFilter.Notorieties = List[Byte](bytes([1,3,6]))  # Notoriety codes 4 (criminals) and 5 (neutral grey names)
-    
+    mobFilter.CheckLineOfSight = True
+    mobFilter.CheckIgnoreObject = True
+
     # Apply the filter
-    greyMobiles = Mobiles.ApplyFilter(mobFilter)
-    
-    # Check and process the detected mobs
-    for mob in greyMobiles:
-        if mob.Name == "Jean":
-            Misc.SendMessage("Known grey detected, continuing...",33)
-            Misc.Pause(500)
-            Misc.IgnoreObject(mob)
-            Misc.Pause(500)
-            return
-        mobProps = Mobiles.GetPropStringList(mob)  # Get the property list of the mob
-        if mobProps and not any("slave" in prop.lower() for prop in mobProps):
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # Get current date/time
-            log_entry = f"{timestamp}, {mob.Name}\n"  # Format log entry
+    mobilesList = Mobiles.ApplyFilter(mobFilter)
 
-            # Append to greyLog file
-            with open(goldLog, 'a') as file:
-                file.write(log_entry)
-            goHome()  # Recall to a safe location
-            Misc.ScriptStop("petTrainer.py")
-            Misc.Pause(500)
-            # Announce the detected grey mobs name
+    # Filter out "a restless soul"
+    filteredMobiles = [mob for mob in mobilesList if mob.Name.lower() != "a restless soul"]
 
-
-            
-    if Player.Weight > 330:
-        Player.HeadMessage(34,"Overweight.")
+    if not filteredMobiles:
+        Misc.SendMessage("No valid mobiles detected", 76)
         Misc.Pause(500)
-        log_gold_amount()
+        return
+
+    mob = filteredMobiles[0]  # Take the first valid mob
+    Misc.SendMessage("Mobile detected: {}".format(mob.Name), 33)
+    Misc.Pause(500)
+
+    mobProps = Mobiles.GetPropStringList(mob)
+    if mobProps:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_entry = f"{timestamp}, {mob.Name}\n"
+
+        with open(goldLog, 'a') as file:
+            file.write(log_entry)
+
         goHome()
         Misc.ScriptStop("petTrainer.py")
         Misc.Pause(500)
-
                 
 def followMobile(mobile):
     """
-    Follows a mobile until the player is within 1 tile of it or the timer times out.
-    Dynamically adjusts the target position based on the relative position of the mobile and the player.
+    Follows a mobile until the player is within 1 tile or a timeout occurs.
+    Dynamically adjusts target position and keeps trying offsets until movement occurs.
     """
-    if mobile is None:
-        Misc.SendMessage("Error: Mobile is None!", 33)
-        Misc.Pause(500)
+    if not mobile or not mobile.Position:
+        Misc.SendMessage("Error: Invalid mobile or position!", 33)
+        Misc.Pause(300)
         return
 
-    if mobile.Position is None:
-        Misc.SendMessage("Error: Mobile position is None!", 33)
-        Misc.Pause(500)
+    start_time = time.time()
+    timeout = 20  # seconds
+    pet1 = Mobiles.FindBySerial(primaryPet)
+
+    if not pet1 or not pet1.Position:
+        Misc.SendMessage("pet1 not found or has no position!", 33)
+        Misc.Pause(300)
         return
 
-    start_time = time.time()  # Record the start time for the timeout
+    # Retry movement with different offsets until we succeed or time runs out
+    offsets = [(-2, 0), (2, 0), (0, -2), (0, 2), (-1, -1), (1, 1), (-1, 1), (1, -1)]
+    while time.time() - start_time < timeout:
+        current_pos = Player.Position
 
-    # Check initial distance
-    distance = Player.DistanceTo(mobile)
-    Misc.Pause(100)
+        for dx, dy in offsets:
+            target_x = pet1.Position.X + dx
+            target_y = pet1.Position.Y + dy
+            target_z = pet1.Position.Z
 
-    if distance > 5:
-        pet1 = Mobiles.FindBySerial(pet1_Serial)
-        if not pet1 or pet1.Position is None:
-            Misc.SendMessage("pet1 not found or has no position!", 33)
+            Player.PathFindTo(target_x, target_y, target_z)
+            Misc.Pause(100)
+
+            # Estimate time to travel based on distance
+            distance = max(abs(Player.Position.X - target_x), abs(Player.Position.Y - target_y))
+            travel_pause = int(distance * 500)  # Adjust 500ms as needed
+            Misc.Pause(travel_pause)
+
+
+            if Player.Position != current_pos:
+                Misc.SendMessage(f"Moved to offset ({dx}, {dy})", 66)
+                Misc.Pause(300)
+                return  # Movement succeeded
+
+    Misc.SendMessage("Failed to move to pet after all retries.", 33)
+    Misc.Pause(300)
+
+
+def stayCloseToPet(pet, max_distance=6):
+    if not pet or not pet.Position:
+        return
+
+    if Player.DistanceTo(pet) > max_distance:
+        Misc.SendMessage("Pet is too far — moving closer.", 33)
+
+        offsets = [(-2, 0), (2, 0), (0, -2), (0, 2), (-1, -1), (1, 1), (-1, 1), (1, -1)]
+
+        for dx, dy in offsets:
+            target_x = pet.Position.X + dx
+            target_y = pet.Position.Y + dy
+            target_z = pet.Position.Z
+
+            path = PathFinding.GetPath(target_x, target_y, True)
+            if path:
+                PathFinding.RunPath(path, 3000)
+                Misc.Pause(1000)
+                return  # Move once and exit
+    
+    
+def detectTargets():
+    paragon_hue = 0x0485
+
+    mobFilter = Mobiles.Filter()
+    mobFilter.Notorieties = List[Byte](bytes([3,4,5,6]))  # Enemies
+    mobFilter.CheckLineOfSight = True
+    mobFilter.CheckIgnoreObject = True
+    mobFilter.RangeMax = 12
+
+    mobs = Mobiles.ApplyFilter(mobFilter)
+
+    # Sort: Paragons (True=0, False=1), then by distance
+    return sorted(
+        mobs,
+        key=lambda mob: (
+            mob.Hue != paragon_hue,           # Paragons first
+            Player.DistanceTo(mob)            # Then closest
+        )
+    )
+
+    
+def pathfindAndWait(x, y, z):
+    start_pos = Player.Position
+    start_time = time.time()
+
+    # Create and configure pathfinding route
+    route = PathFinding.Route()
+    route.X = x
+    route.Y = y
+    route.MaxRetry = 5
+    route.StopIfStuck = False
+
+    PathFinding.Go(route)  # Initiate movement
+
+    # Wait until player arrives or timeout
+    while Player.Position.X != x or Player.Position.Y != y:
+        Misc.Pause(200)
+        if time.time() - start_time > 30:  # Optional: 30-second timeout
+            Misc.SendMessage("Pathfinding timed out", 33)
+            Misc.Pause(300)
+            break
+
+    # Final pause to ensure arrival
+    travel_duration = time.time() - start_time
+    Misc.SendMessage(f"Travel completed in {round(travel_duration, 2)} seconds.", 65)
+    Misc.Pause(int(travel_duration * 1000))  # Pause in milliseconds
+        
+def refresh_pets():
+    global pet1, pet2
+    pet1 = Mobiles.FindBySerial(primaryPet)
+    pet2 = Mobiles.FindBySerial(secondaryPet)
+
+
+def no_targets_behavior():
+    Player.HeadMessage(55, "No targets detected.")
+    Misc.Pause(500)
+    return
+
+
+def engage_target(target_list):
+    target = target_list[0]
+    start_time = time.time()
+    max_guard_duration = 3
+
+    checkAndMoveAway(target, can_ignore=False)
+
+    while Player.DistanceTo(pet1) < 2 and time.time() - start_time < max_guard_duration:
+        if pet1 and not pet1.WarMode:
+            Player.ChatSay("All guard me")
+            Misc.Pause(300)
+        Player.Attack(target)
+        Misc.Pause(250)
+
+    combat_with_target(target)
+
+
+
+def combat_with_target(target):
+    start_time = time.time()
+    retry_count = 0
+    max_retries = 3
+
+    while Mobiles.FindBySerial(target.Serial):
+        avoidNearbyThreats()
+        current_targets = detectTargets()
+        stayCloseToPet(pet1)
+
+        if pet1 and not pet1.WarMode:
+            Player.ChatSay("All guard me")
             Misc.Pause(500)
-            return
+            retry_count += 1
 
-        route = PathFinding.Route()
-        route.MaxRetry = 5
-        route.StopIfStuck = False
+            if retry_count >= max_retries:
+                Misc.SendMessage("Pet didnt enter WarMode. Breaking out after 3 attempts.", 33)
+                Misc.Pause(500)
+                break  # Exit the function
+        else:
+            retry_count = 0  # reset counter if pet successfully engaged
 
-        # Determine dynamic adjustments for X and Y based on relative positions
-        route.X = pet1.Position.X + (3 if pet1.Position.X < Player.Position.X else -3)
-        route.Y = pet1.Position.Y + (3 if pet1.Position.Y < Player.Position.Y else -3)
 
-        # Execute pathfinding with the dynamically adjusted position
-        if mobile:
+def engage_with_pet(target):
+    start_time = time.time()
+    while target and Player.DistanceTo(pet2) < 2 and time.time() - start_time < 5:
+        Player.ChatSay(f"{pet2.Name} kill")
+        Misc.Pause(500)
+        Target.TargetExecute(target)
+        Misc.Pause(200)
+        Mobiles.Message(target, 66, "attacking")
+        Misc.Pause(200)
+
+
+def maintain_combat_position(pet, target):
+    if pet and Player.DistanceTo(pet) > 6:
+        followMobile(pet)
+
+
+def heal_pets_if_needed():
+    if (pet2 and pet2.Hits < 18) or (pet1 and pet1.Hits < 18):
+        Player.ChatSay(64, "all follow me")
+        Target.Cancel()
+        Misc.Pause(500)
+        Player.ChatSay(64, "all follow me")
+        Misc.Pause(500)
+
+        BandageHeal.Start()
+        Misc.Pause(2000)
+
+
+        while (pet1 and pet1.Hits < 22) or (pet2 and pet2.Hits < 22):
+            refresh_pets()
             Misc.Pause(500)
-            PathFinding.Go(route)
-            Misc.Pause(500)
-            
-            Misc.SendMessage(f"Pathfinding to: X={route.X}, Y={route.Y}", 66)
-            Misc.Pause(500)
-            
-            # Check distance again after moving
-            new_distance = Player.DistanceTo(mobile)
-            Misc.Pause(500)
 
-            deadCheck()
+            # If pets are still taking damage after 30s, give up
 
 
+            # Check for threats during healing
+            active_targets = detectTargets()
+            if active_targets:
+                target = active_targets[0]  # First detected enemy
+
+                # Re-engage pets if they’re idle and in range
+                if pet1 and not pet1.WarMode and Player.DistanceTo(pet1) < 8:
+                    Player.ChatSay(f"{pet1.Name} kill")
+                    Misc.Pause(300)
+                    Target.TargetExecute(target)
+                    Misc.Pause(200)
+
+                if pet2 and not pet2.WarMode and Player.DistanceTo(pet2) < 8:
+                    Player.ChatSay(f"{pet2.Name} kill")
+                    Misc.Pause(300)
+                    Target.TargetExecute(target)
+                    Misc.Pause(200)
+
+                # Stop healing temporarily to let pets re-engage
+                BandageHeal.Stop()
+                Misc.Pause(1500)  # Let pets stabilize
+                BandageHeal.Start()
+                healing_timer = time.time()  # Reset healing timer after restart
+
+            Misc.Pause(500)
+
+        BandageHeal.Stop()
 
         
-def deadCheck():
-    if Player.IsGhost:
-        Misc.ScriptStopAll(True)
-
         
+
+
+def attempt_remount():
+    if not pet2:
+        return
+
+    while Player.DistanceTo(pet2) > 2:
+        Player.ChatSay(pet2.Name + " follow me")
+        Misc.Pause(500)
+
+    Journal.Clear()
+    attempt_start = time.time()
+    timeout = 10
+
+    while not Player.Mount and time.time() - attempt_start < timeout:
+        Mobiles.UseMobile(pet2)
+        Misc.Pause(500)
+
+        if Journal.SearchByType("Your mount refuses to let you ride here!", "System"):
+            Misc.SendMessage("❌ Mount refused to be ridden here.", 33)
+            Misc.Pause(200)
+            break
+
+        elif Journal.SearchByType("This mount is too ill to ride.", "System"):
+            Spells.CastMagery("Cure")
+            Target.WaitForTarget(10000, False)
+            Misc.Pause(500)
+            Target.TargetExecute(pet2)
+            Misc.Pause(500)
+            
+def avoidNearbyThreats():
+    checkSelfHealth()  # 🩸 check for damage
+
+    threats = detectTargets()
+    for mob in threats:
+        if Player.DistanceTo(mob) <= 1:
+            checkAndMoveAway(mob, can_ignore=False)
+            break
+
+
 def attackEvil():
-    pet1 = Mobiles.FindBySerial(pet1_Serial)
-    pet2 = Mobiles.FindBySerial(pet2_Serial)
+    refresh_pets()
     Misc.Pause(200)
-    """
-    Continuously applies the filter to find mobiles with notoriety 6,
-    attacks them until the list is empty, and then keeps checking for new targets.
-    Ensures that the two mobs targeted for provocation have the same Z value as the player.
-    """
+
+    # NEW: Check immediately after entering area
+    checkAndMoveAway(detectClosestHostile(), can_ignore=False)
+
     while True:
-        Misc.Pause(200)
-        Misc.IgnoreObject(pet1)
-        Misc.Pause(200)
-        Misc.IgnoreObject(pet2)
-        Misc.Pause(200)
-        
-        # Apply the filter
-        mobFilter = Mobiles.Filter()
-        mobFilter.Notorieties = List[Byte](bytes([3,4]))
-        mobFilter.CheckLineOfSight = True
-        mobFilter.RangeMax = 11
-        mobFilter.CheckIgnoreObject = True
-        mobList = sorted(Mobiles.ApplyFilter(mobFilter), key=lambda mob: Player.DistanceTo(mob))  # Sort by greatest distance
-        
-        if not mobList:
+        target_list = detectTargets()
+        if not target_list:
+            Player.HeadMessage(55, "No targets detected.")
             Misc.Pause(500)
-            break  # Restart loop if no mobs found
-        
-        mob = mobList[0]  # Always start with the closest mob
-            
-        # Proceed with attacking
-        Player.ChatSay("All guard me")
-        Misc.Pause(600)
-        Player.Attack(mob)
-        Misc.Pause(500)
-        Misc.Pause(2000) #positioning delay
+            break
 
-        start_time = time.time()  # Start the timer
-        while Mobiles.FindBySerial(mob.Serial):  # Wait until the mob is dead
-            if time.time() - start_time > 60:  # If more than 40 seconds passed, move to the next mob
-                Misc.SendMessage(f"Timeout reached, moving to next target.", 33)
-                Misc.Pause(200)
-                break
-            Misc.Pause(500)  # Pause to prevent spamming
-            deadPetCheck
-            checkPetHealth()
-            #######EXPERIMENT ZONE##############
-#            followMobile(mob)
-            if mob and Player.DistanceTo(pet1) > 6:
-                for x in range (3):
-                    Player.Walk(calculateDirectionToRun(pet1))
-                    Misc.Pause(500)
-            if mob and Player.DistanceTo(pet2) > 6:
-                for x in range (3):
-                    Player.Walk(calculateDirectionToRun(pet2))
-                    Misc.Pause(500)
-            if mob and Player.DistanceTo(pet2) <=1 or Player.DistanceTo(pet1) <= 1:
-                Player.Attack(mob)
-                Misc.Pause(500)
-                
-            # Keep trying to move away inside loop, but never ignore
-            checkAndMoveAway(mob, can_ignore=False)
+        engage_target(target_list)
         Misc.Pause(1000)
-        deadPetCheck
+        deadCheck()
         checkPetHealth()
-        pet1 = Mobiles.FindBySerial(pet1_Serial)
-        pet2 = Mobiles.FindBySerial(pet2_Serial)
-        if pet2.Hits < 18 or pet1.Hits < 18:
-            Player.ChatSay(64, "all follow me")
-            Misc.Pause(500)
-            BandageHeal.Start()
-            while pet1.Hits < 22 or pet2.Hits < 22:
-                Misc.Pause(1000)
-                pet1 = Mobiles.FindBySerial(pet1_Serial)
-                pet2 = Mobiles.FindBySerial(pet2_Serial)
-            BandageHeal.Stop()
+        refresh_pets()
+        heal_pets_if_needed()
 
-        
-        mobList = sorted(Mobiles.ApplyFilter(mobFilter), key=lambda mob: Player.DistanceTo(mob))  # Sort by greatest distance
-        
-        if len(mobList) == 0:
+        if len(detectTargets()) == 0:
             gatherPets()
+
         worldSave()
-        detectGreyNames() 
+        attempt_remount()
 
-def attackAnimals():
-    pet1 = Mobiles.FindBySerial(pet1_Serial)
-    pet2 = Mobiles.FindBySerial(pet2_Serial)
-    """
-    Continuously applies the filter to find mobiles with notoriety 6,
-    attacks them until the list is empty, and then keeps checking for new targets.
-    Ensures that the two mobs targeted for provocation have the same Z value as the player.
-    """
-    while True:
-        Misc.IgnoreObject(pet1)
-        Misc.Pause(100)
-        Misc.IgnoreObject(pet2)
-        Misc.Pause(100)
-        
-        # Apply the filter
-        mobFilter = Mobiles.Filter()
-        mobFilter.Notorieties = List[Byte](bytes([3,4]))
-        mobFilter.CheckLineOfSight = True
-        mobFilter.RangeMax = 11
-        mobFilter.CheckIgnoreObject = True
-        mobList = sorted(Mobiles.ApplyFilter(mobFilter), key=lambda mob: Player.DistanceTo(mob))  # Sort by greatest distance
-        
-        if not mobList:
-            Misc.Pause(500)
-            break  # Restart loop if no mobs found
-        
-        mob = mobList[0]  # Always start with the closest mob
-            
-        # Proceed with attacking
-        Player.ChatSay("All guard me")
-        Misc.Pause(600)
-        Player.Attack(mob)
-        Misc.Pause(500)
-        Misc.Pause(2000) #positioning delay
 
-        start_time = time.time()  # Start the timer
-        while Mobiles.FindBySerial(mob.Serial):  # Wait until the mob is dead
-            if time.time() - start_time > 38:  # If more than 40 seconds passed, move to the next mob
-                Misc.SendMessage(f"Timeout reached, moving to next target.", 33)
-                Misc.Pause(200)
-                break
-            Misc.Pause(500)  # Pause to prevent spamming
-            deadPetCheck
-            checkPetHealth()
-            #######EXPERIMENT ZONE##############
-#            followMobile(mob)
-            if mob and Player.DistanceTo(pet1) > 6:
-                for x in range (3):
-                    Player.Walk(calculateDirectionToRun(pet1))
-                    Misc.Pause(500)
-            if mob and Player.DistanceTo(pet2) > 6:
-                for x in range (3):
-                    Player.Walk(calculateDirectionToRun(pet2))
-                    Misc.Pause(500)
-            if mob and Player.DistanceTo(pet2) <=1 or Player.DistanceTo(pet1) <= 1:
-                Player.Attack(mob)
-                Misc.Pause(500)
-                
-            # Keep trying to move away inside loop, but never ignore
-            checkAndMoveAway(mob, can_ignore=False)
-        Misc.Pause(1000)
-        deadPetCheck
-        checkPetHealth()
-        pet1 = Mobiles.FindBySerial(pet1_Serial)
-        pet2 = Mobiles.FindBySerial(pet2_Serial)
-        if pet2.Hits < 18 or pet1.Hits < 18:
-            Player.ChatSay(64, "all follow me")
-            Misc.Pause(500)
-            BandageHeal.Start()
-            while pet1.Hits < 22 or pet2.Hits < 22:
-                Misc.Pause(1000)
-                pet1 = Mobiles.FindBySerial(pet1_Serial)
-                pet2 = Mobiles.FindBySerial(pet2_Serial)
-            BandageHeal.Stop()
 
-        
-        mobList = sorted(Mobiles.ApplyFilter(mobFilter), key=lambda mob: Player.DistanceTo(mob))  # Sort by greatest distance
-        
-        if len(mobList) == 0:
-            gatherPets()
-        worldSave()
-        detectGreyNames() 
-        
 def gatherPets():
     timeout = time.time() + 10  # Set 10-second timeout
-    pet1 = Mobiles.FindBySerial(pet1_Serial)
-    pet2 = Mobiles.FindBySerial(pet2_Serial)  
-    while Player.DistanceTo(pet2) > 1 or Player.DistanceTo(pet1) > 1:
-        if time.time() > timeout:  # If 10 seconds have passed, call followMobile()
+    pet1 = Mobiles.FindBySerial(primaryPet)
+    pet2 = Mobiles.FindBySerial(secondaryPet)
+
+    # Only check distances for pets that exist
+    def petTooFar(pet):
+        return pet and Player.DistanceTo(pet) > 1
+
+    while petTooFar(pet1) or petTooFar(pet2):
+        if time.time() > timeout:
             Player.ChatSay("All follow me")
             Misc.Pause(3000)
-            if Player.DistanceTo(pet1) > 1:
-                for x in range (5):
-                    Player.Run(calculateDirectionToRun(pet1))
-                    Misc.Pause(500)
-            if Player.DistanceTo(pet2) >1:
-                for x in range (5):
-                    Player.Run(calculateDirectionToRun(pet2))
+
+            if petTooFar(pet1):
+                for _ in range(5):
+                    Player.Walk(calculateDirectionToRun(pet1))
                     Misc.Pause(500)
             
         Misc.Pause(100)
@@ -549,266 +645,52 @@ def gatherPets():
      
         
         # Refresh pet references in case of position updates
-        pet1 = Mobiles.FindBySerial(pet1_Serial)
-        pet2 = Mobiles.FindBySerial(pet2_Serial)    
-
-def attackFey():
-    pet1 = Mobiles.FindBySerial(pet1_Serial)
-    pet2 = Mobiles.FindBySerial(pet2_Serial)
-    """
-    Continuously applies the filter to find mobiles with notoriety 6,
-    attacks them until the list is empty, and then keeps checking for new targets.
-    Ensures that the two mobs targeted for provocation have the same Z value as the player.
-    """
-    while True:
-        Misc.IgnoreObject(pet1)
-        Misc.Pause(500)
-        Misc.IgnoreObject(pet2)
-        Misc.Pause(500)
-        
-        # Apply the filter
-        mobFilter = Mobiles.Filter()
-        mobFilter.Notorieties = List[Byte](bytes([3,4]))
-        mobFilter.CheckLineOfSight = True
-        mobFilter.RangeMax = 11
-        mobFilter.CheckIgnoreObject = True
-        mobList = sorted(Mobiles.ApplyFilter(mobFilter), key=lambda mob: Player.DistanceTo(mob), reverse = True)  # Sort by greatest distance
-        
-        if not mobList:
-            Misc.Pause(500)
-            break  # Restart loop if no mobs found
-        
-        mob = mobList[0]  # Always start with the closest mob
-        excluded_mobs = ["a serpentine dragon", "a pig", "a dog"]
-        
-        if mob.Name in excluded_mobs or Player.DistanceTo(mob) < 3:
-            reason = "Too Close" if Player.DistanceTo(mob) < 3 else "too dangerous"
-            Misc.SendMessage(f"Ignoring {mob.Name} - {reason}", 33)  # 33 is red
-            Misc.Pause(600)
-            Misc.IgnoreObject(mob)
-            Misc.Pause(500)
-            continue
-            
-        if mob.Name == "a sepentine dragon":
-            Misc.IgnoreObject(mob)
-            Misc.Pause(500)
-            continue
-            
-            
-        # Proceed with attacking
-        Player.ChatSay("All kill")
-        Misc.Pause(500)
-        if Target.HasTarget():
-            Target.TargetExecute(mob)
-        else:
-            Spells.CastMagery("Greater Heal")
-            Misc.Pause(1500)
-            Target.Cancel()
-        Player.ChatSay("All kill")
-        Misc.Pause(500)
-        if Target.HasTarget():
-            Target.TargetExecute(mob)
-        else:
-            Spells.CastMagery("Greater Heal")
-            Misc.Pause(1500)
-            Target.Cancel()
-        Misc.Pause(2500) #positioning delay
-
-        start_time = time.time()  # Start the timer
-        while Mobiles.FindBySerial(mob.Serial):  # Wait until the mob is dead
-            if time.time() - start_time > 60:  # If more than 40 seconds passed, move to the next mob
-                Misc.SendMessage(f"Timeout reached, moving to next target.", 33)
-                Misc.Pause(200)
-                break
-            Misc.Pause(500)  # Pause to prevent spamming
-            checkPetHealth()
-            #######EXPERIMENT ZONE##############
-#            followMobile(mob)
-            if mob and Player.DistanceTo(pet1) > 6:
-                for x in range (3):
-                    Player.Walk(calculateDirectionToRun(pet1))
-                    Misc.Pause(500)
-            if mob and Player.DistanceTo(pet2) > 6:
-                for x in range (3):
-                    Player.Walk(calculateDirectionToRun(pet2))
-                    Misc.Pause(500)
-            if mob and Player.DistanceTo(pet2) <=1 or Player.DistanceTo(pet1) <= 1:
-                Player.ChatSay("All kill")
-                if Target.HasTarget():
-                    Target.TargetExecute(mob)
-                else:
-                    Target.Cancel()
-                    Misc.Pause(500)
-                Misc.Pause(500)
-                
-            # Keep trying to move away inside loop, but never ignore
-            checkAndMoveAway(mob, can_ignore=False)
-        Misc.Pause(1000)
-        pet1 = Mobiles.FindBySerial(pet1_Serial)
-        pet2 = Mobiles.FindBySerial(pet2_Serial)
-        if pet2.Hits < 18 or pet1.Hits < 18:
-            Player.ChatSay(64, "all follow me")
-            Misc.Pause(500)
-            BandageHeal.Start()
-            while pet1.Hits < 22 or pet2.Hits < 22:
-                Misc.Pause(1000)
-                pet1 = Mobiles.FindBySerial(pet1_Serial)
-                pet2 = Mobiles.FindBySerial(pet2_Serial)
-            BandageHeal.Stop()
-
-        timeout = time.time() + 10  # Set 10-second timeout
-
-        while Player.DistanceTo(pet2) > 1 or Player.DistanceTo(pet1) > 1:
-            if time.time() > timeout:  # If 10 seconds have passed, call followMobile()
-                Player.ChatSay("All follow me")
-                Misc.Pause(3000)
-                if Player.DistanceTo(pet1) > 1:
-                    for x in range (5):
-                        Player.Run(calculateDirectionToRun(pet1))
-                        Misc.Pause(500)
-                if Player.DistanceTo(pet2) >1:
-                    for x in range (5):
-                        Player.Run(calculateDirectionToRun(pet2))
-                        Misc.Pause(500)
-                
-            Misc.Pause(100)
-            Misc.SendMessage("Waiting for pets to heal.", 33)
-            Misc.Pause(500)
-
-         
-            
-            # Refresh pet references in case of position updates
-            pet1 = Mobiles.FindBySerial(pet1_Serial)
-            pet2 = Mobiles.FindBySerial(pet2_Serial)
-
-            
-        worldSave()
-        detectGreyNames()     
-
-
-
-                   
+        pet1 = Mobiles.FindBySerial(primaryPet)
+        pet2 = Mobiles.FindBySerial(secondaryPet)    
 
 
 def checkPetHealth():
-    # Find pets by their serial
-    pet2 = Mobiles.FindBySerial(pet2_Serial)  # Replace with actual serial
-    pet1 = Mobiles.FindBySerial(pet1_Serial)  # Replace with actual serial
+    pet2 = Mobiles.FindBySerial(primaryPet)
+    pet1 = Mobiles.FindBySerial(secondaryPet)
 
-    healing_active = False  # Track if healing is in progress
-    healing_pet = None  # Track which pet is being healed
+    pets = [pet1, pet2]
 
-    pets = [pet2, pet1]
-    
-    mobFilter = Mobiles.Filter()
-    mobFilter.Notorieties = List[Byte](bytes([3,4]))
-    mobFilter.CheckLineOfSight = True
-    mobFilter.RangeMax = 11
-    mobFilter.CheckIgnoreObject = True
-    
-        
-
-        
-        
-
-    # Check players health and act accordingly
-    if Player.Hits < 25:
-        Misc.SendMessage("Health critically low, returning home!", 35)
+    # Abort if either pet is dead
+    if any(pet and pet.Hits < 16 for pet in pets):  
+        BandageHeal.Start()
+        Misc.Pause(200)
+        Player.ChatSay("All follow me")
         Misc.Pause(500)
-        goHome()
-        Misc.ScriptStop("petTrainer.py")
-        return  # Exit function to prevent further execution
+        Player.ChatSay("All follow me")
+        Misc.Pause(500)
+        Player.ChatSay("All follow me")
+        Misc.Pause(1500)
 
-    elif Player.Hits < 75:
-        if Player.Poisoned:
-            Spells.CastMagery("Cure")
-            Target.WaitForTarget(10000, False)
-            Target.TargetExecute(Player.Serial)
+        timeout = 10  # seconds to wait for pets to come close
+        wait_start = time.time()
+
+        while time.time() - wait_start < timeout:
+            all_close = True
+            for pet in pets:
+                if pet and Player.DistanceTo(pet) > 1:
+                    all_close = False
+                    break
+            if all_close:
+                break
             Misc.Pause(500)
-        Spells.CastMagery("Greater Heal")
-        Target.WaitForTarget(10000, False)
-        Target.TargetExecute(Player.Serial)
+
+        # Extra short delay to allow pets to fully stop before switching mode
+        Misc.Pause(500)
+        Player.ChatSay("All guard me")
         Misc.Pause(500)
 
-    # Check health of both pets
-    for pet in pets:
-        if pet and pet.Hits < 9:  # If any pet is critically low, go home
-            Misc.SendMessage(f"{pet.Name} is critically low! Returning home!", 35)
+        # Optional: Resume attacking if a valid target still exists
+        targetList = detectTargets()
+        if targetList:
+            Player.Attack(targetList[0])
             Misc.Pause(500)
-            goHome()
-            Misc.ScriptStop("petTrainer.py")
-            return
-
-        if pet and pet.Hits < 13:  # If pet is injured but not critical
-            if not healing_active or healing_pet != pet:  # Start healing if not already active
-                Misc.SendMessage(f"{pet.Name} is injured! Starting BandageHeal...", 55)
-                Misc.Pause(500)
-                BandageHeal.Start()
-                Player.ChatSay(64, f"{pet.Name} follow me")
-                Misc.Pause(500)
-
-                # Tell the other pet to guard you
-                for other_pet in pets:
-                    if other_pet and other_pet != pet:
-                        Player.ChatSay(64, f"{other_pet.Name} guard me")
-                        Misc.Pause(500)
-                        mobList = sorted(Mobiles.ApplyFilter(mobFilter), key=lambda mob: Player.DistanceTo(mob))  # Sort by greatest distance
-                        if len(mobList) > 0:
-                            mob = mobList[0]  # Always start with the closest mob
-                            Player.Attack(mob)
-                            Misc.Pause(500)
-
-
-                healing_active = True
-                healing_pet = pet
-
-            # Continue checking both pets while healing the injured one
-            while healing_active and pet.Hits < 22:
-                Misc.Pause(2000)  # Wait before checking health again
-                Player.ChatSay(64, f"{pet.Name} follow me")
-                Misc.Pause(500)
-                if Player.Hits < 75:
-                    if Player.Poisoned:
-                        Spells.CastMagery("Cure")
-                        Target.WaitForTarget(10000, False)
-                        Target.TargetExecute(Player.Serial)
-                        Misc.Pause(500)
-                    Spells.CastMagery("Greater Heal")
-                    Target.WaitForTarget(10000, False)
-                    Target.TargetExecute(Player.Serial)
-                    Misc.Pause(500)
-                Player.ChatSay(64, f"{other_pet.Name} guard me")
-                Misc.Pause(500)
-                mobList = sorted(Mobiles.ApplyFilter(mobFilter), key=lambda mob: Player.DistanceTo(mob))  # Sort by greatest distance
-                if len(mobList) > 0:
-                    mob = mobList[0]  # Always start with the closest mob
-                    Player.Attack(mob)
-                    Misc.Pause(500)
-                for other_pet in pets:  
-                    if other_pet and other_pet != pet and other_pet.Hits < 10:
-                        Misc.SendMessage(f"{other_pet.Name} is also injured! Switching healing...", 55)
-                        Misc.Pause(500)
-                        Player.ChatSay(64, f"{other_pet.Name} follow me")
-                        Misc.Pause(500)
-                        healing_pet = other_pet
-
-            # Once healed, stop bandage healing
-            Misc.SendMessage(f"{pet.Name} has recovered! Stopping BandageHeal...", 55)
-            Misc.Pause(500)
-            BandageHeal.Stop()
-            healing_active = False
-            healing_pet = None
     
     
-    # Notify if either pet is missing
-    if not pet2 or not pet1:
-        missing_pets = []
-        if not pet2:
-            missing_pets.append("pet2")
-        if not pet1:
-            missing_pets.append("pet1")
-        Misc.SendMessage(f"The following pet(s) are not found: {', '.join(missing_pets)}")
-        Misc.Pause(500)
 
 
 
@@ -852,99 +734,109 @@ def attempt_recall(location):
 
             
 def goHome():
-    trash_container = 0x409C3212  # Trash container
-    keep_container = 0x42E87E92  # Container for items to keep
-    other_container = 0x435ED948  # Container for specific items
+    # Container definitions
+    trash_container = 0x409C3212
+    keep_container = 0x42E87E92
+    other_container = 0x435ED948
     reg_container = 0x42E88440
+    secondary_bolt_container = 0x422E5A11
 
-    # Define item groups
-    specific_items = {0x0F95, 0x1081, 0x0F7E}  # Bolt, leather, bones
-    lootList = {0x09B7, 0x0EED, 0x1BF2,0xBB7C,0x1F4C}  # Example: feather, meat, gold, ingots (update accordingly)
-    trashList = {0x141B,0x0FC7}
+    # Item classification sets
+    specific_items = {0x0F95, 0x1081, 0x0F7E}  # bolts, leather, bones
+    loot_list = {0x09B7, 0x0EED, 0x1BF2, 0xBB7C, 0x1F4C}
+    trash_list = {0x141B, 0x0FC7}
+    excluded_hued_items = {0x22C5, 0x0E79, 0x3679, 0x108A, 0x1EA7}
+    special_move = {0x0E86, 0x14FC}  # pickaxe or lockpick
+    other_move = {0x2260, 0x0F95}  # leather and bolts
+
+    # Travel and setup
     
     attempt_recall("Winter 2")
     deadCheck()
     Player.PathFindTo(6802, 3901, 12)
-    Misc.Pause(1500)
+    Misc.Pause(1000)
+
     door = Items.FindBySerial(0x42F89EDC)
-    if door.ItemID == 0x0677:
+    if door and door.ItemID == 0x0677:
         Items.UseItem(door)
         Misc.Pause(500)
-    Player.PathFindTo(6803, 3897, 17)
-    Misc.Pause(2500)
-    Items.UseItem(0x42E87E92)
-    Misc.Pause(500)
-    Items.UseItem(0x435ED948)
-    Misc.Pause(500)
 
-        
-    for item in Player.Backpack.Contains:
-        if item.ItemID in specific_items:
+    Player.PathFindTo(6803, 3898, 17)
+    Misc.Pause(2000)
+
+    for container in [keep_container, other_container]:
+        Items.UseItem(container)
+        Misc.Pause(500)
+
+    # Phase 1: Main sorting
+    backpack_items = Player.Backpack.Contains
+    for item in backpack_items:
+        if item.ItemID == 0x14EC:  # Treasure map
+            props = Items.GetPropStringList(item)
+            if any("plainly drawn" in prop.lower() for prop in props):
+                Items.Move(item, trash_container, -1)
+                Misc.Pause(1000)
+            else:
+                while not Journal.SearchByName("The treasure is marked by the red pin.", ""):
+                    Items.UseItem(item)
+                    Misc.Pause(800)
+                Misc.SendMessage("Map decoded")
+                Misc.Pause(300)
+                Journal.Clear()
+
+        elif item.ItemID == 0x0E86:  # Pickaxe
+            if "<BASEFONT COLOR=#FFFF00> orcish pickaxe<BASEFONT COLOR=#FFFFFF>" in item.Name:
+                Player.ChatSay("Ah, an Orcish Pickaxe!")
+                Misc.Pause(300)
+            else:
+                Items.Move(item, trash_container, -1)
+                Misc.Pause(1000)
+
+        elif item.ItemID in specific_items:
             Items.Move(item, other_container, -1)
-        elif item.ItemID in lootList:
+        elif item.ItemID in loot_list:
             Items.Move(item, keep_container, -1)
         elif item.ItemID in pchest:
             Items.Move(item, reg_container, 1)
-        elif item.ItemID in trashList:
+        elif item.ItemID in trash_list:
             Items.Move(item, trash_container, 1)
         elif item.ItemID == 0x1081:
-            Items.Move(item, 0x435ED948, -1)
-        elif item.ItemID == 0x14EC:  # Check if item is a treasure map, trash level 1s
-            props = Items.GetPropStringList(item)
-            
-            # Check if "plainly drawn" is in the properties list
-            if any("plainly drawn" in prop.lower() for prop in props):
-                Items.Move(item, trash_container, -1)
-                
-            else:
-                while not Journal.SearchByName("The treasure is marked by the red pin.",""):
-                    Items.UseItem(item)
-                    Misc.Pause(1000)
-                Misc.SendMessage("Map decoded")
-                Misc.Pause(500)
-                Journal.Clear()
-           
-        elif item.ItemID == 0x0E86:  # Pickaxe or orc mask 0x141B
-            if "<BASEFONT COLOR=#FFFF00> orcish pickaxe<BASEFONT COLOR=#FFFFFF>" in item.Name:
-                Player.ChatSay("Ah, an Orcish Pickaxe!")
-                Misc.Pause(500)
-            else:
-                Items.Move(item, trash_container, -1)
-        Misc.Pause(1000)  # Pause between moves
+            Items.Move(item, other_container, -1)
 
-            
-            
-    bandages = Items.BackpackCount(0x0E21,-1)
-    bolts = Items.ContainerCount(0x435ED948,0x0F95,-1)
-    bolts = Items.FindByID(0x0F95,-1,0x435ED948)
-    if bandages < 100:
-        bandages = Items.FindByID(0x0E21,-1,0x42E87E92)
-        Misc.Pause(500)
-        Items.Move(bandages,Player.Backpack.Serial,50)
         Misc.Pause(1000)
-    Misc.Pause(500)
-    Items.UseItem(0x42E88440)
-    Misc.Pause(500)
+
+    # Phase 2: Restock bandages
+    bandage_count = Items.BackpackCount(0x0E21, -1)
+    if bandage_count < 100:
+        bandages = Items.FindByID(0x0E21, -1, keep_container)
+        if bandages:
+            Items.Move(bandages, Player.Backpack.Serial, 50)
+            Misc.Pause(1000)
+
+    # Phase 3: Reagents
+    Items.UseItem(reg_container)
+    Misc.Pause(400)
     stockRegs()
+
+    # Phase 4: Final sort (hued junk, runes, statues)
     Player.PathFindTo(6800, 3898, 17)
-    Misc.Pause(2500)
-    EXCLUDED_HUED_ITEMS = {0x22C5, 0x0E79, 0x3679, 0x108A, 0x1EA7}
-    for item in Player.Backpack.Contains:
+    Misc.Pause(600)
+
+    backpack_items = Player.Backpack.Contains
+    for item in backpack_items:
         if item.ItemID in rune_ids:
             Items.Move(item, rune_destination, 1)
-            Misc.Pause(1000)
         elif item.ItemID in creature_statue_ids:
             Items.Move(item, statue_destination, -1)
-            Misc.Pause(1000)
-        elif item.ItemID == 0x0E86 or item.ItemID == 0x14FC: #pickaxe or lockpick
+        elif item.ItemID in special_move:
             Items.Move(item, statue_destination, -1)
-            Misc.Pause(1000)
-        elif item.ItemID == 0x2260 or item.ItemID == 0x0F95: #leather and bolts
-            Items.Move(item, 0x422E5A11, 1)
-            Misc.Pause(1000)
-        elif item.Hue != 0x0000 and item.ItemID not in EXCLUDED_HUED_ITEMS:
+        elif item.ItemID in other_move:
+            Items.Move(item, secondary_bolt_container, 1)
+        elif item.Hue != 0x0000 and item.ItemID not in excluded_hued_items:
             Items.Move(item, statue_destination, -1)
-            Misc.Pause(1000)
+
+        Misc.Pause(1000)
+
 
 def stockRegs():
     # Define items with their respective IDs and target storage
@@ -994,51 +886,53 @@ def stockRegs():
             Items.Move(item, bandage_container, -1)
             Misc.Pause(1000)
 
+def run_away_from(mob):
+    start_x = Player.Position.X
+    start_y = Player.Position.Y
+
+    dx = Player.Position.X - mob.Position.X
+    dy = Player.Position.Y - mob.Position.Y
+
+    escape_directions = [
+        (dx * 3 if dx != 0 else 3, dy * 3 if dy != 0 else 3),  # go 3 tiles in opposite direction
+        (3, 0), (-3, 0), (0, 3), (0, -3),  # cardinal directions
+        (3, 3), (-3, -3), (-3, 3), (3, -3)  # diagonals
+    ]
+    
+    for offset_x, offset_y in escape_directions:
+        target_x = start_x + offset_x
+        target_y = start_y + offset_y
+
+        path = PathFinding.GetPath(target_x, target_y, True)
+        if path:
+            PathFinding.RunPath(path, 3000)  # Run to safety
+            Misc.Pause(2000)
+            return True  # success
+
+    Player.HeadMessage(33, "All paths blocked!")
+    Misc.Pause(500)
+    return False  # failure
+            
 def checkAndMoveAway(mob, can_ignore=False):
-    if mob is None or mob.Position is None:
-        return True  # No valid mob, treat as success
+    if not mob:
+        return
 
-    if Player.DistanceTo(mob) < 2:
-        Misc.SendMessage("Too close for comfort", 53)
-        Misc.Pause(500)
-
-        # Try calculated escape direction first
-        direction = calculateDirectionToEscape(mob)  # Should return a string like "West"
-        if direction:
-            for _ in range(4):
-                Player.Run(direction)
-                Misc.Pause(500)
-
-        Misc.Pause(1500)
-
-        # If still too close, try up to 10 random direction attempts (each 3 steps)
-        retry_attempts = 10
-        directions = ["North", "Northeast", "East", "Southeast", 
-                      "South", "Southwest", "West", "Northwest"]
-
-        while Player.DistanceTo(mob) < 3 and retry_attempts > 0:
-            random_direction = random.choice(directions)
-            for _ in range(4):
-                Player.Run(random_direction)
-                Misc.Pause(500)
-            Misc.Pause(1000)
-            retry_attempts -= 1
-
-        # Final check
-        if Player.DistanceTo(mob) >= 2:
-            return True
+    distance = Player.DistanceTo(mob)
+    if distance <= 1:
+            
+        run_away_from(mob)
+        checkSelfHealth()  # 🩸 Immediately check and flag for healing
 
         if can_ignore:
-            Misc.SendMessage(f"Couldnt create distance from {mob.Name}, ignoring.", 33)
-            Misc.Pause(500)
             Misc.IgnoreObject(mob)
-            Misc.Pause(350)
-            return False
-
-    return True  # Already at a safe distance
 
 
 
+def detectClosestHostile():
+    targets = detectTargets()
+    return targets[0] if targets else None
+    
+    
 def calculateDirectionToEscape(mobile):
     # If the mob is exactly on top of the player, pick a random escape direction
     if mobile.Position.X == Player.Position.X and mobile.Position.Y == Player.Position.Y:
@@ -1100,227 +994,60 @@ if worldSavePause:
     Player.ChatSay(64, f"Making a run in {wait_time} seconds.")
     Misc.Pause(wait_time)
 
-feylocations = ["serpentine", "serpentine 2", "serpentine 3", "serpentine 4", "serpentine 5", "serpentine 6","Despise", "serpentine 7", "serpentine 8", "serpentine 9"]
-evil_locations = ["Air 4","overseers","Titans"]
-ele_locations = ["Irons","Fires"]
-magic_locations = ["Couple Liches"]
 
+pet1 = Mobiles.FindBySerial(primaryPet)
+pet2 = Mobiles.FindBySerial(secondaryPet)
 
-if pet1.Hits <= 5 or pet2.Hits <= 5:
+if (pet1 and pet1.Hits <= 5) or (pet2 and pet2.Hits <= 5):
     Misc.SendMessage("One or both pets are dead. Stopping script.", 33)
     Misc.Pause(500)
     Misc.ScriptStatus("petTrainer.py")
-    Misc.Pause(500)   
+    Misc.Pause(500)
+
 Journal.Clear()    
 worldSave()  
-#Misc.Beep()  
-Misc.Pause(500)
-SellAgent.Enable()
-Misc.Pause(500)
-BuyAgent.Enable()
-Misc.Pause(500)
-BandageHeal.Stop()
-Misc.Pause(500)
-Misc.ScriptRun("Auto-Loot.py")
-Misc.Pause(500)
-Misc.ClearIgnore()
-Misc.Pause(500)
+#SellAgent.Enable()
+#Misc.Pause(500)
+#BuyAgent.Enable()
+#Misc.Pause(500)
+if not Misc.ScriptStatus("Auto-Loot.py"):
+    Misc.ScriptRun("Auto-Loot.py")
+#if not Misc.ScriptStatus("petWatcher.py"):
+#    Misc.ScriptRun("petWatcher.py")
+#
+    
+#Misc.ClearIgnore()
+#Misc.Pause(500)
 
-if farmingFey:
-    for location in feylocations:
-        Misc.SendMessage(f"Recalling to: {location}", 33)
-        Misc.Pause(500)
-        attempt_recall(location)
-        attackFey()
-        corpse_list = findCorpses()
-        if corpse_list:
-            moveToCorpse(max_retry=5, overall_timeout=30, individual_timeout=5)
-        else:
-            Misc.SendMessage(f"No corpses found at {location}.", 33)
-        Misc.Pause(1000)  # Pause for a moment before moving to the next location
-        worldSave()
-        attackFey()
-        corpse_list = findCorpses()
-        if corpse_list:
-            moveToCorpse(max_retry=5, overall_timeout=30, individual_timeout=5)
-        else:
-            Misc.SendMessage(f"No corpses found at {location}.", 33)
-        Misc.Pause(1000)  # Pause for a moment before moving to the next location
-
-
-    attempt_recall("karma")
-    karmaRaise()
-    worldSave()   
-    attempt_recall("Sell Gems")
-    Misc.WaitForContext(0x0026BFC1, 10000)
-    Misc.ContextReply(0x0026BFC1, 2)
+if not Player.Mount:
+    Mobiles.UseMobile(pet2)
     Misc.Pause(500)
-    Misc.WaitForContext(0x0026CC5D, 10000)
-    Misc.ContextReply(0x0026CC5D, 2)
-    Misc.Pause(500)
-    worldSave()   
-    attempt_recall("Buy Regs")
-    Misc.WaitForContext(0x0026D40E, 10000)
-    Misc.ContextReply(0x0026D40E, 1)
-    Misc.Pause(500)
-    log_gold_amount()       
-    # Return home
-    worldSave()   
-    goHome()
+    
+def farm_cycle():
+    locations = [
+        "Airs",
+        "Airs 2",
+        "Despise Titans", 
+        "Earths",
+        "Earths 2",
+        "Deep Earth",
+        "Snow Ele",
+        "Snow Harpy",
+        "Snow Harpy 2",
+        "Snow Lady",
+        "Overseers"
+    ]
 
-if farmingEvil:
-    for location in evil_locations:
-        Misc.SendMessage(f"Recalling to: {location}", 33)
-        Misc.Pause(500)
-        attempt_recall(location)
+    for loc in locations:
+        chosen = random.choice(loc) if isinstance(loc, list) else loc
+        attempt_recall(chosen)
+        detectMobiles()
         attackEvil()
-        if location == "Air 4":
-            if Player.Position.Y > 1021:
-                Player.PathFindTo(93,1021,-29)
-                Misc.Pause(3000)
-            attackEvil()
-            if Player.Position. Y > 1018:
-                Player.PathFindTo(93,1018,-30)
-                Misc.Pause(2000)
-            attackEvil()
-        if location == "Titans":
-            if Player.Position. Y < 1340:
-                Player.PathFindTo(5650,1340,9)
-                Misc.Pause(2000)
-            attackEvil()
-            if Player.Position. Y < 1344:
-                Player.PathFindTo(5650,1344,-9)
-                Misc.Pause(2000)
-            attackEvil()
-        corpse_list = findCorpses()
-        if corpse_list:
-            moveToCorpse(max_retry=5, overall_timeout=30, individual_timeout=5)
-        else:
-            Misc.SendMessage(f"No corpses found at {location}.", 33)
-        Misc.Pause(1000)  # Pause for a moment before moving to the next location
+        detectMobiles()
+        moveToCorpse()
         worldSave()
-        attackEvil()
-        corpse_list = findCorpses()
-        if corpse_list:
-            moveToCorpse(max_retry=5, overall_timeout=30, individual_timeout=5)
-        else:
-            Misc.SendMessage(f"No corpses found at {location}.", 33)
-        Misc.Pause(1000)  # Pause for a moment before moving to the next location
         
-    worldSave()   
-    log_gold_amount()       
-    # Return home
-    worldSave()   
+    sellGems()
     goHome()
     
-    for location in ele_locations:
-        Misc.SendMessage(f"Recalling to: {location}", 33)
-        Misc.Pause(500)
-        attempt_recall(location)
-        attackEvil()
-        if location == "Fires":
-            if Player.Position. Y < 1103:
-                Player.PathFindTo(55,1103,-27)
-                Misc.Pause(500)
-                attackEvil()
-                Misc.Pause(1500)
-            attackEvil()
-            if Player.Position. Y < 1105:
-                Player.PathFindTo(53,1105,-26)
-                Misc.Pause(500)
-                attackEvil()
-                Misc.Pause(1500)
-            attackEvil()
-            if Player.Position. Y < 1108:
-                Player.PathFindTo(49,1108,-29)
-                Misc.Pause(500)
-                attackEvil()
-                Misc.Pause(1500)
-            attackEvil()
-        if location == "Irons":
-            if Player.Position. Y < 1076:
-                Player.PathFindTo(78,1076,-30)
-                Misc.Pause(1500)
-            attackEvil()
-            if Player.Position. Y < 1080:
-                Player.PathFindTo(74,1080,-30)
-                Misc.Pause(1500)
-            attackEvil()
-            if Player.Position. Y < 1082:
-                Player.PathFindTo(72,1082,-30)
-                Misc.Pause(1500)
-            attackEvil()
-        corpse_list = findCorpses()
-        if corpse_list:
-            moveToCorpse(max_retry=5, overall_timeout=30, individual_timeout=5)
-        else:
-            Misc.SendMessage(f"No corpses found at {location}.", 33)
-        Misc.Pause(1000)  # Pause for a moment before moving to the next location
-        worldSave()
-        attackEvil()
-        corpse_list = findCorpses()
-        if corpse_list:
-            moveToCorpse(max_retry=5, overall_timeout=30, individual_timeout=5)
-        else:
-            Misc.SendMessage(f"No corpses found at {location}.", 33)
-        Misc.Pause(1000)  # Pause for a moment before moving to the next location
-        
-    worldSave()   
-    log_gold_amount()       
-    # Return home
-    worldSave()   
-    goHome()
-    
-    for location in magic_locations:
-        Misc.SendMessage(f"Recalling to: {location}", 33)
-        Misc.Pause(500)
-        attempt_recall(location)
-        attackEvil()
-        if location == "Ores":
-            if Player.Position.Y > 1126:
-                Player.PathFindTo(131,1126,-28)
-                Misc.Pause(2000)
-            attackEvil()
-            if Player.Position.Y > 1123:
-                Player.PathFindTo(135,1123,-27)
-                Misc.Pause(2000)
-            attackEvil()
-            if Player.Position.Y > 1119:
-                Player.PathFindTo(140,1119,-30)
-                Misc.Pause(2000)
-            attackEvil()
-            if Player.Position.X < 143:
-                Player.PathFindTo(143,1121,-27)
-                Misc.Pause(2000)
-            attackEvil()
-
-        corpse_list = findCorpses()
-        if corpse_list:
-            moveToCorpse(max_retry=5, overall_timeout=30, individual_timeout=5)
-        else:
-            Misc.SendMessage(f"No corpses found at {location}.", 33)
-        Misc.Pause(1000)  # Pause for a moment before moving to the next location
-        worldSave()
-        attackEvil()
-        corpse_list = findCorpses()
-        if corpse_list:
-            moveToCorpse(max_retry=5, overall_timeout=30, individual_timeout=5)
-        else:
-            Misc.SendMessage(f"No corpses found at {location}.", 33)
-        Misc.Pause(1000)  # Pause for a moment before moving to the next location
-        
-    worldSave() 
-    attempt_recall("Sell Gems")
-    Misc.WaitForContext(0x0026BFC1, 10000)
-    Misc.ContextReply(0x0026BFC1, 2)
-    Misc.Pause(500)
-    Misc.WaitForContext(0x0026CC5D, 10000)
-    Misc.ContextReply(0x0026CC5D, 2)
-    Misc.Pause(500)  
-    log_gold_amount()       
-    # Return home
-    worldSave()   
-    goHome()
-    
-
-    
+farm_cycle()

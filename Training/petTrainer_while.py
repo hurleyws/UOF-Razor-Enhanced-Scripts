@@ -5,4 +5,4 @@ while True:
     while Misc.ScriptStatus("petTrainer.py"):
         Misc.Pause(1000)
     
-    Misc.Pause(8 * 60 * 1000)
+    Misc.Pause(5 * 60 * 1000)

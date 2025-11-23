@@ -743,6 +743,7 @@ def goHome():
         Mobiles.UseMobile( beetle )
         Misc.Pause( 500 )
 
+Journal.Clear()
 Misc.Pause(500)
 Misc.ScriptRun("PK Radar.py")
 Misc.Pause(500)

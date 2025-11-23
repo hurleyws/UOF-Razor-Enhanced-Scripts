@@ -61,7 +61,15 @@ if Player.Name == 'ToolmanTailor':
     move_items(player_items, wands, 143, 125)
 
 
-# Hurlpea-specific item placement
+# Alyer-specific item placement
+if Player.Name == 'Alyer Base':
+    player_items = Player.Backpack.Contains
+
+    # Reagents (regs) to top left
+    move_items(player_items, regs, 43, 64)
+    
+    
+    # Hurlpea-specific item placement
 if Player.Name == 'Hurlpea':
     player_items = Player.Backpack.Contains
 

@@ -2,6 +2,9 @@
 import sys
 from System.Collections.Generic import List
 from System import Int32 as int
+import datetime
+import os
+from math import sqrt
 
 #################
 #PROSPECTING???##
@@ -39,12 +42,44 @@ gem_ids = [0x0F21,0x0F16,0x0F19,0x0F13,0x0F10,0x0F25,0x0F2D,0x0F15,0x0F26]
 
 #GUMP STUFF
 # Configuration
-target_container = 0x40FA9D34  # Replace with your chest's serial
+target_container = 0x40FA9D34  # Replace with your chests serial
 item_id = 0x1BF2               # Iron ingots
 item_hue = 0x0000              # Standard iron color
 gump_id = 9270               # Desired gumpID
 
+def SafePathFindTo(x, y, z):
+    try:
+        Player.PathFindTo(x, y, z)
+        log_debug(f"SafePathFindTo succeeded to ({x}, {y}, {z})")
+    except Exception as e:
+        log_debug(f"SafePathFindTo first attempt failed to ({x}, {y}, {z}): {e}")
+        Misc.Pause(7000)
+        try:
+            Player.PathFindTo(x, y, z)
+            log_debug(f"SafePathFindTo retry succeeded to ({x}, {y}, {z})")
+        except Exception as e2:
+            log_debug(f"SafePathFindTo retry failed to ({x}, {y}, {z}): {e2}")
+
+
+
+def log_debug(message=""):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_dir = r"C:\Users\Hurley\Documents\GitHub\UOF-Razor-Enhanced-Scripts\Debug_logs"
+    log_file = "HVL_mineOre_debug_log.txt"
+    log_path = os.path.join(log_dir, log_file)
+
+    # Create folder if it doesnt exist
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    try:
+        with open(log_path, "a") as log:
+            log.write(f"[{timestamp}] {message}\n")
+    except Exception as e:
+        Misc.SendMessage(f"Logging error: {e}", 33)
+        
 def count_ingots():
+    log_debug("count_ingots")
     total = 0
     container_items = Items.FindBySerial(target_container).Contains
     for item in container_items:
@@ -53,6 +88,7 @@ def count_ingots():
     return total
 
 def show_gump(count):
+    log_debug("show_gump")
     gd = Gumps.CreateGump(True, True, False, False)
     Gumps.AddBackground(gd, 0, 0, 230, 90, 9270)
     Gumps.AddBackground(gd, 10, 13, 60, 70, 9012)
@@ -62,6 +98,7 @@ def show_gump(count):
     Gumps.SendGump(gump_id, Player.Serial, 400, 300, gd.gumpDefinition, gd.gumpStrings)
 
 def worldSave():
+    log_debug("worldSave")
     manualPause = False
     
     # Check for world save or manual pause
@@ -94,12 +131,14 @@ def worldSave():
     Journal.Clear()
     
 def stowegems():
+    log_debug("stowegems")
     for i in Player.Backpack.Contains:
         if i.ItemID in gem_ids:
             Items.Move(i,0x42476FAA,-1)
             Misc.Pause(1000)
 
 def toolCheck():
+    log_debug("toolCheck")
     axecount = Items.ContainerCount(Player.Backpack.Serial,0x0E86,-1)
     axecount = int(axecount)
     prospcount = Items.ContainerCount(Player.Backpack.Serial,0x0FB4,-1)
@@ -122,6 +161,7 @@ def toolCheck():
                 Misc.Pause(1000)
 
 def smeltAll():
+    log_debug("smeltAll")
     if Player.Mount:
         Mobiles.UseMobile(Player.Serial) 
         Misc.Pause(1000)
@@ -130,38 +170,45 @@ def smeltAll():
     Misc.Pause(2000)
     ore = Items.FindByID(0x19B9, -1, Player.Backpack.Serial, True, True)
     while ore:
-        Items.Move(ore, beetle, -1)
-        Misc.Pause(1000)
+        if ore:
+            Items.Move(ore, beetle, -1)
+            Misc.Pause(1000)
         ore = Items.FindByID(0x19B9, -1, Player.Backpack.Serial, True, True)
         # Move all granite (ID: 0x1779) to the beetle
     granite = Items.FindByID(0x1779, -1, Player.Backpack.Serial, True, True)
     while granite:
-        Items.Move(granite, beetle, -1)
-        Misc.Pause(1000)
+        if granite:
+            Items.Move(granite, beetle, -1)
+            Misc.Pause(1000)
         granite = Items.FindByID(0x1779, -1, Player.Backpack.Serial, True, True)
     ore = Items.FindByID(0x19B9,-1,beetlepack)
     while ore:
-        Items.UseItem(ore)
-        Misc.Pause(350)
+        if ore:
+            Items.UseItem(ore)
+            Misc.Pause(350)
         ore = Items.FindByID(0x19B9,-1,beetlepack)   
     ore = Items.FindByID(0x19B9,-1,Player.Backpack.Serial)
     while ore:
-        Items.UseItem(ore)
-        Misc.Pause(350)
+        if ore:
+            Items.UseItem(ore)
+            Misc.Pause(350)
         ore = Items.FindByID(0x19B9,-1,Player.Backpack.Serial)
     granite = Items.FindByID(0x1779,-1,beetlepack)
     while granite:
-        Items.Move(granite,0x43545500,-1)
-        Misc.Pause(1000)
+        if granite:
+            Items.Move(granite,0x43545500,-1)
+            Misc.Pause(1000)
         granite = Items.FindByID(0x1779,-1,beetlepack)  
     granite = Items.FindByID(0x1779,-1,Player.Backpack.Serial)
     while granite:
-        Items.Move(granite,0x43545500,-1)
-        Misc.Pause(1000)
+        if granite:
+            Items.Move(granite,0x43545500,-1)
+            Misc.Pause(1000)
         granite = Items.FindByID(0x1779,-1,Player.Backpack.Serial)    
 
 # Function to move ore from a container (and its subcontainers) to a target
 def moveRocks(container_serial, target_serial):
+    log_debug("moveRocks")
     # Function to recursively find and move ore
     def findAndMoveOre(container_serial):
         # Get all items in the container
@@ -179,6 +226,7 @@ def moveRocks(container_serial, target_serial):
 
 # Main function to use the smelter
 def useSmelter():
+    log_debug("useSmelter")
     # Ensure player dismounts if mounted (e.g., beetlepack is a mount)
     if Player.Mount:
         Mobiles.UseMobile(Player.Serial)
@@ -207,6 +255,7 @@ def useSmelter():
     Misc.Pause(500)
 
 def stoweOre():
+    log_debug("stoweOre")
     # Ensure player dismounts if mounted (e.g., beetlepack is a mount)
     if Player.Mount:
         Mobiles.UseMobile(Player.Serial)
@@ -242,83 +291,113 @@ def stoweOre():
     Misc.Pause(500)
     
 def goInside():
-    Player.PathFindTo(2117, 359, 7)
-    Misc.Pause(4500)
-    Player.PathFindTo(2120, 355, 7)
+    log_debug("goInside")
+    SafePathFindTo(2117, 359, 7)
+    Misc.Pause(5000)
+    log_debug("Pathfind to tele tile")
+    SafePathFindTo(2120, 355, 7)
     Misc.Pause(1500)
+    log_debug("Pathfind to door")
     door = Items.FindBySerial(0x402F1C41)
-    if door.ItemID == 0x067D:
+    if door and door.ItemID == 0x067D:
         Items.UseItem(door)
         Misc.Pause(500)
+        log_debug("Open door")
     if metaSmelting:
-        Player.PathFindTo(2123,354,7)
+        SafePathFindTo(2123,354,7)
         Misc.Pause(1500)
+        log_debug("Pathfind to chest")
         stoweOre()
-        Player.PathFindTo(2125,359,7)
+        SafePathFindTo(2125,359,7)
         Misc.Pause(2500)
+        log_debug("Pathfind to melter")
         checkIngots()
         useSmelter()
-    Player.PathFindTo(2127, 355, 7)
+    SafePathFindTo(2127, 355, 7)
     Misc.Pause(2000)
+    log_debug("Pathfind to circle forge")
     
 def checkIngots():
+    log_debug("checkIngots")
     Items.UseItem(0x403DC418)
     Misc.Pause(500)
     ingotcount = Items.ContainerCount(0x403DC418,0x1BF2,-1)
-    Misc.SendMessage(ingotcount)
-    Misc.Pause(250)
     if ingotcount > 1000:
         Items.Move(Items.FindByID(0x1BF2,-1,0x403DC418),Player.Backpack.Serial,1000)
         Misc.Pause(1000)
     
 
 def storeAll():
+    log_debug("storeAll")
     Items.UseItem(ingotbox)
     Misc.Pause(500)
     ingots = Items.FindByID(0x1BF2,-1,Player.Backpack.Serial)
     while ingots:
-        Items.Move(ingots,ingotbox.Serial,-1)
-        Misc.Pause(1000)
+        if ingots:
+            Items.Move(ingots,ingotbox.Serial,-1)
+            Misc.Pause(1000)
         ingots = Items.FindByID(0x1BF2,-1,Player.Backpack.Serial)
     iron_ingot_count = count_ingots()
     show_gump(iron_ingot_count)
 
 
 def moveOre():
-    ingotbox = Items.FindBySerial(0x40FA9D34)
-    if ingotbox and Player.DistanceTo(ingotbox) < 2:
-        Items.UseItem(ingotbox)
-        Misc.Pause(1500)
+    log_debug("moveOre")
+#    ingotbox = Items.FindBySerial(0x40FA9D34)
+#    if ingotbox and Player.DistanceTo(ingotbox) < 2:
+#        Items.UseItem(ingotbox)
+#        Misc.Pause(1500)
     
     # Check if players weight exceeds 350
     if Player.Weight > 350:
         # Move all ore (ID: 0x19B9) to the beetle
         ore = Items.FindByID(0x19B9, -1, Player.Backpack.Serial, True, True)
         while ore:
-            Items.Move(ore, beetle, -1)
-            Misc.Pause(1000)
+            if ore:
+                Items.Move(ore, beetle, -1)
+                Misc.Pause(1000)
+            else:
+                break
             ore = Items.FindByID(0x19B9, -1, Player.Backpack.Serial, True, True)
         
         # Move all granite (ID: 0x1779) to the beetle
         granite = Items.FindByID(0x1779, -1, Player.Backpack.Serial, True, True)
         while granite:
-            Items.Move(granite, beetle, -1)
-            Misc.Pause(1000)
+            if granite:
+                Items.Move(granite, beetle, -1)
+                Misc.Pause(1000)
+            else:
+                break
             granite = Items.FindByID(0x1779, -1, Player.Backpack.Serial, True, True)
         
 def mineAtLocation(*args):
-    while (not Journal.SearchByName('There is no metal here to mine.', 'System') and
-           not Journal.SearchByName('Target cannot be seen.', 'System') and
-           not Journal.SearchByName('You cant mine there.', 'System') and
-           Items.ContainerCount(beetlepack, 0x19B9, -1) < 130):
+    log_debug("mineAtLocation")
+    retry_count = 0
+    max_retries = 25
+
+    while (not Journal.SearchByType('There is no metal here to mine.',"System") and
+           not Journal.SearchByType('Target cannot be seen.',"System") and
+           not Journal.SearchByType('You cant mine there.',"System") and
+           Items.ContainerCount(beetlepack, 0x19B9, -1) < 130 and
+           retry_count < max_retries):
+
         worldSave()
         Items.UseItemByID(0x0E86, -1)
-        Target.WaitForTarget( 1000, True )
-        Target.TargetExecute(*args)
-        Misc.Pause(1000)  # Pass all received arguments to TargetExecute
+        Misc.Pause(500)
+        if Target.WaitForTarget(1000, True):
+            Target.TargetExecute(*args)
+        else:
+            log_debug("WaitForTarget timeout, skipping this attempt")
+        Misc.Pause(500)
         moveOre()
-        
+
+        retry_count += 1
+
+    if retry_count >= max_retries:
+        log_debug("Exited mineAtLocation due to max retries")
+
 def prospectLocation(*args):
+    log_debug("prospectLocation")
     Items.UseItemByID(0x0FB4,-1)
     Misc.Pause(500)
     Target.TargetExecute(*args)
@@ -336,23 +415,22 @@ while True:
     
     ######### ROUTE 1 #########
       #1.1 - Dull Copper
-    Player.HeadMessage(64,'Starting mining route 1.')
-    Misc.Pause(500)
+    log_debug("Route 1 start")
     if not Player.Mount:
         Mobiles.UseMobile(beetle)
         Misc.Pause(1000)
-    Player.PathFindTo(2145,342,0)
+    SafePathFindTo(2145,342,0)
     Misc.Pause(4000)
     #REFRESH EAST HOUSE
-    Player.PathFindTo(2154,328,0)
+    SafePathFindTo(2154,328,0)
     Misc.Pause(3000)
-    Player.PathFindTo(2167,319,0)
+    SafePathFindTo(2167,319,0)
     Misc.Pause(4000)
-    Player.PathFindTo(2179,318,0)
+    SafePathFindTo(2179,318,0)
     Misc.Pause(3000)
-    Player.PathFindTo(2198,311,0)
+    SafePathFindTo(2198,311,0)
     Misc.Pause(3000)
-    Player.PathFindTo(2197,301,0)
+    SafePathFindTo(2197,301,0)
     Misc.Pause(2000)
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
@@ -363,7 +441,7 @@ while True:
     mineAtLocation(2198,300,0)
 
        #1.2 - Copper
-    Player.PathFindTo(2189, 304, 0)
+    SafePathFindTo(2189, 304, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -372,7 +450,7 @@ while True:
     mineAtLocation(2189,303,0)
     
        #1.3 - Gold
-    Player.PathFindTo(2174, 314, 0)
+    SafePathFindTo(2174, 314, 0)
     Misc.Pause(5000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -381,7 +459,7 @@ while True:
     mineAtLocation(2174,313,0)
     
        #1.4 - Copper
-    Player.PathFindTo(2168, 316, 0)
+    SafePathFindTo(2168, 316, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -391,7 +469,7 @@ while True:
     mineAtLocation(2169,316,0)
     
        #1.5 - Valorite
-    Player.PathFindTo(2163, 316, 0)
+    SafePathFindTo(2163, 316, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -405,10 +483,11 @@ while True:
      ####RUN HOME UNIQUE SEQUENCE  
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
-    Player.PathFindTo(2143,342,0)
+    SafePathFindTo(2143,342,0)
     Misc.Pause(4000)
-    Player.PathFindTo(2121,362,0)
+    SafePathFindTo(2121,362,0)
     Misc.Pause(5000)
+    log_debug("Begin goInside")
 
     goInside()
     smeltAll()
@@ -417,15 +496,14 @@ while True:
 
     ######### ROUTE 2 #########    
         #2.1 - Shadow
-    Player.HeadMessage(64,'Starting mining route 2.')
-    Misc.Pause(500)
+    log_debug("Route 2 start")
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
-    Player.PathFindTo(2145,343,0)
+    SafePathFindTo(2145,343,0)
     Misc.Pause(3000)
-    Player.PathFindTo(2146,320,0)
+    SafePathFindTo(2146,320,0)
     Misc.Pause(6000)
-    Player.PathFindTo(2149,302,0)
+    SafePathFindTo(2149,302,0)
     Misc.Pause(3000)
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
@@ -436,7 +514,7 @@ while True:
     mineAtLocation(2151,302,4)
     
        #2.2 - Dull Copper
-    Player.PathFindTo(2152, 307, 0)
+    SafePathFindTo(2152, 307, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -447,7 +525,7 @@ while True:
     mineAtLocation(2153,307,1)
     
        #2.3 - Shadow
-    Player.PathFindTo(2154, 310, 0)
+    SafePathFindTo(2154, 310, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -456,7 +534,7 @@ while True:
     mineAtLocation(2154,311,6)
 
        #2.4 - Dull Copper
-    Player.PathFindTo(2147, 310, 0)
+    SafePathFindTo(2147, 310, 0)
     Misc.Pause(2000)
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
@@ -469,7 +547,7 @@ while True:
     mineAtLocation(2149,310,6)
     
        #2.5 - Dull Copper
-    Player.PathFindTo(2147, 317, 0)
+    SafePathFindTo(2147, 317, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -482,12 +560,13 @@ while True:
      ####RUN HOME  
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)     
-    Player.PathFindTo(2146,342,-2)
+    SafePathFindTo(2146,342,-2)
     Misc.Pause(4000)
-    Player.PathFindTo(2134,353,0)
+    SafePathFindTo(2134,353,0)
     Misc.Pause(3000)
-    Player.PathFindTo(2121,362,0)
+    SafePathFindTo(2121,362,0)
     Misc.Pause(4000)
+    log_debug("Begin goInside")
 
 
     goInside()
@@ -497,13 +576,12 @@ while True:
 
         ######### ROUTE 3 #########
         #3.1 - Dull Copper
-    Player.HeadMessage(64,'Starting mining route 3.')
-    Misc.Pause(500)
+    log_debug("Route 3 start")
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
-    Player.PathFindTo(2133,323,0)
+    SafePathFindTo(2133,323,0)
     Misc.Pause(6000)
-    Player.PathFindTo(2125,310,0)
+    SafePathFindTo(2125,310,0)
     Misc.Pause(4000)
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
@@ -516,7 +594,7 @@ while True:
     mineAtLocation(2123,310,14) 
     
         #3.2 - Agapite
-    Player.PathFindTo(2124, 316, 0)
+    SafePathFindTo(2124, 316, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -525,7 +603,7 @@ while True:
     mineAtLocation(2122,316,6)
     
         #3.3 - Shadow
-    Player.PathFindTo(2124, 317, 0)
+    SafePathFindTo(2124, 317, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -534,7 +612,7 @@ while True:
     mineAtLocation(2123,315,0)
 
         #3.4  - Iron
-    Player.PathFindTo(2125, 319, 0)
+    SafePathFindTo(2125, 319, 0)
     Misc.Pause(4700)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -543,7 +621,7 @@ while True:
     mineAtLocation(2124,319,0)
     
         #3.5 - Dull Copper
-    Player.PathFindTo(2136, 314, 0)
+    SafePathFindTo(2136, 314, 0)
     Misc.Pause(6000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -556,10 +634,11 @@ while True:
         ##GO HOME SEQUENCE
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000) 
-    Player.PathFindTo(2146,336,0)
+    SafePathFindTo(2146,336,0)
     Misc.Pause(4000)
-    Player.PathFindTo(2123,361,0)
+    SafePathFindTo(2123,361,0)
     Misc.Pause(6000)
+    log_debug("Begin goInside")
 
     goInside()
     smeltAll() 
@@ -568,11 +647,10 @@ while True:
     
     ######### ROUTE 4 #########
         #4.1 - Dull Copper
-    Player.HeadMessage(64,'Starting mining route 4.')
-    Misc.Pause(500)
+    log_debug("Route 4 start")
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
-    Player.PathFindTo(2125,325,0)
+    SafePathFindTo(2125,325,0)
     Misc.Pause(5000)
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
@@ -583,7 +661,7 @@ while True:
     mineAtLocation(2124,323,0)
     
         #4.2 - Dull Copper
-    Player.PathFindTo(2124, 330, 0)
+    SafePathFindTo(2124, 330, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -594,7 +672,7 @@ while True:
     mineAtLocation(2125,331,4)
     
         #4.3 - Copper
-    Player.PathFindTo(2122, 329, 0)
+    SafePathFindTo(2122, 329, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -603,7 +681,7 @@ while True:
     mineAtLocation(2121,329,0)
 
        #4.4 - Dull Copper
-    Player.PathFindTo(2116, 333, 0)
+    SafePathFindTo(2116, 333, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -612,7 +690,7 @@ while True:
     mineAtLocation(2117,332,8)
     
        #4.5 - Shadow
-    Player.PathFindTo(2126, 337, 0)
+    SafePathFindTo(2126, 337, 0)
     Misc.Pause(4000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -623,8 +701,9 @@ while True:
         ##GO HOME
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)  
-    Player.PathFindTo(2123,361,0)
+    SafePathFindTo(2123,361,0)
     Misc.Pause(5000)
+    log_debug("Begin goInside")
 
     goInside()
     smeltAll() 
@@ -633,13 +712,14 @@ while True:
 
     ######### ROUTE 5 #########    
         #5.1 - Bronze
-    Player.HeadMessage(64,'Starting mining route 5.')
-    Misc.Pause(500)
+    log_debug("Route 5 start")
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
-    Player.PathFindTo(2102,375,0)
-    Misc.Pause(6000)
-    Player.PathFindTo(2082,361,0)
+    SafePathFindTo(2118, 375, 0)
+    Misc.Pause(3500)
+    SafePathFindTo(2102,375,0)
+    Misc.Pause(3500)
+    SafePathFindTo(2082,361,0)
     Misc.Pause(5000)
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
@@ -650,7 +730,7 @@ while True:
     mineAtLocation(2081, 362 ,0 ,6008)
     
         #5.2 - Dull Copper
-    Player.PathFindTo(2082, 356, 0)
+    SafePathFindTo(2082, 356, 0)
     Misc.Pause(4000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -659,8 +739,8 @@ while True:
     mineAtLocation(2081,356,0)
     
         #5.3 - Dull Copper
-    Player.PathFindTo(2091, 346, 0)
-    Misc.Pause(4000)
+    SafePathFindTo(2091, 346, 0)
+    Misc.Pause(2500)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
     worldSave()
@@ -668,7 +748,7 @@ while True:
     mineAtLocation(2090,346,0)
     
         #5.4 - Copper
-    Player.PathFindTo(2095, 343, 0)
+    SafePathFindTo(2095, 343, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -677,8 +757,8 @@ while True:
     mineAtLocation(2095,342,0)
     
         #5.5 - Shadow
-    Player.PathFindTo(2108, 337, 0)
-    Misc.Pause(2000)
+    SafePathFindTo(2108, 337, 0)
+    Misc.Pause(3000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
     worldSave()
@@ -687,9 +767,12 @@ while True:
 
         ##GO HOME SEQUENCE
     Mobiles.UseMobile(beetle)
-    Misc.Pause(1000)    
-    Player.PathFindTo(2114,363,0)
-    Misc.Pause(4000)
+    Misc.Pause(1000) 
+    SafePathFindTo(2106,350,0)
+    Misc.Pause(3000)   
+    SafePathFindTo(2114,363,0)
+    Misc.Pause(3000)
+    log_debug("Begin goInside")
 
     goInside()
     smeltAll()
@@ -701,18 +784,17 @@ while True:
 
     ######### ROUTE 6 #########    
        #6.1 - Shadow
-    Player.HeadMessage(64,'Starting mining route 6.')
-    Misc.Pause(500)
+    log_debug("Route 6 start")
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
-    Player.PathFindTo(2106,375,0)
+    SafePathFindTo(2106,375,0)
     Misc.Pause(5000)
     #REFRESH WEST HOUSE
-    Player.PathFindTo(2082,390,0)
+    SafePathFindTo(2082,390,0)
     Misc.Pause(4000)
-    Player.PathFindTo(2071,393,0)
+    SafePathFindTo(2071,393,0)
     Misc.Pause(2000)
-    Player.PathFindTo(2050,389,0)
+    SafePathFindTo(2050,389,0)
     Misc.Pause(4000)
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
@@ -725,7 +807,7 @@ while True:
     mineAtLocation(2050, 388 ,0 ,6003)
     
        #6.2 - Shadow
-    Player.PathFindTo(2064,398,0)
+    SafePathFindTo(2064,398,0)
     Misc.Pause(5000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -736,7 +818,7 @@ while True:
     mineAtLocation(2063, 400 ,0 ,6012)
     
         #6.3 - Verite
-    Player.PathFindTo(2069, 380, 0)
+    SafePathFindTo(2069, 380, 0)
     Misc.Pause(4000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -747,7 +829,7 @@ while True:
     mineAtLocation(2068, 380 ,0)
     
        #6.4 - Bronze
-    Player.PathFindTo(2074, 372, 0)
+    SafePathFindTo(2074, 372, 0)
     Misc.Pause(3000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -756,7 +838,7 @@ while True:
     mineAtLocation(2073, 373 ,0 ,6012)
 
        #6.5 - Dull Copper
-    Player.PathFindTo(2073, 368, 0)
+    SafePathFindTo(2073, 368, 0)
     Misc.Pause(3000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -767,10 +849,11 @@ while True:
         #GO HOME SEQUENCE
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)    
-    Player.PathFindTo(2097,361,0)
+    SafePathFindTo(2097,361,0)
     Misc.Pause(4000)
-    Player.PathFindTo(2113,362,0)
+    SafePathFindTo(2113,362,0)
     Misc.Pause(3000)
+    log_debug("Begin goInside")
     
     goInside()
     smeltAll()
@@ -779,18 +862,17 @@ while True:
   
     ######### ROUTE 7 #########
       #7.1 - Dull Copper
-    Player.HeadMessage(64,'Starting mining route 7.')
-    Misc.Pause(500)
+    log_debug("Route 7 start")
     if not Player.Mount:
         Mobiles.UseMobile(beetle)
         Misc.Pause(1000)
-    Player.PathFindTo(2145,338,0)
+    SafePathFindTo(2145,338,0)
     Misc.Pause(3000)
-    Player.PathFindTo(2167,319,0)
+    SafePathFindTo(2167,319,0)
     Misc.Pause(4000)
-    Player.PathFindTo(2198,311,0)
+    SafePathFindTo(2198,311,0)
     Misc.Pause(5000)
-    Player.PathFindTo(2202,301,0)
+    SafePathFindTo(2202,301,0)
     Misc.Pause(2500)
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
@@ -803,7 +885,7 @@ while True:
     mineAtLocation(2204,301,4)
 
        #7.2 - Copper
-    Player.PathFindTo(2202, 296, 0)
+    SafePathFindTo(2202, 296, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -814,7 +896,7 @@ while True:
     mineAtLocation(2202,297,0,6003)
     
        #7.3 - Shadow
-    Player.PathFindTo(2205, 292, 0)
+    SafePathFindTo(2205, 292, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -825,7 +907,7 @@ while True:
     mineAtLocation(2205,291,0)
     
        #7.4 - Dull Copper
-    Player.PathFindTo(2207, 285, 0)
+    SafePathFindTo(2207, 285, 0)
     Misc.Pause(2000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -836,7 +918,7 @@ while True:
     mineAtLocation(2207,285,0)
     
        #7.5 - Iron
-    Player.PathFindTo(2175, 300, 0)
+    SafePathFindTo(2175, 300, 0)
     Misc.Pause(8000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -847,12 +929,13 @@ while True:
          ####RUN HOME UNIQUE SEQUENCE  
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
-    Player.PathFindTo(2163,316,0)
+    SafePathFindTo(2163,316,0)
     Misc.Pause(5000)
-    Player.PathFindTo(2143,342,0)
+    SafePathFindTo(2143,342,0)
     Misc.Pause(4000)
-    Player.PathFindTo(2121,362,0)
+    SafePathFindTo(2121,362,0)
     Misc.Pause(5000)
+    log_debug("Begin goInside")
 
     goInside()
     smeltAll()
@@ -861,12 +944,11 @@ while True:
 
     ######### ROUTE 8 #########
       #8.1 - Iron
-    Player.HeadMessage(64,'Starting mining route 8.')
-    Misc.Pause(500)
+    log_debug("Route 8 start")
     if not Player.Mount:
         Mobiles.UseMobile(beetle)
         Misc.Pause(1000)
-    Player.PathFindTo(2103,338,7)
+    SafePathFindTo(2103,338,7)
     Misc.Pause(7000)
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
@@ -878,7 +960,7 @@ while True:
     mineAtLocation(2102, 338 ,12)
 
        #8.2 - Iron
-    Player.PathFindTo(2099,341,7)
+    SafePathFindTo(2099,341,7)
     Misc.Pause(3000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -888,7 +970,7 @@ while True:
     mineAtLocation(2097, 341 ,0)
     
        #8.3 - Iron
-    Player.PathFindTo(2088,349,7)
+    SafePathFindTo(2088,349,7)
     Misc.Pause(4000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -898,7 +980,7 @@ while True:
     mineAtLocation(2087, 350 ,0)
     
        #8.4 - Iron
-    Player.PathFindTo(2083,353,7)
+    SafePathFindTo(2083,353,7)
     Misc.Pause(3000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -908,7 +990,7 @@ while True:
     mineAtLocation(2082, 354 ,0)
     
        #8.5 - Iron
-    Player.PathFindTo(2078,359,7)
+    SafePathFindTo(2078,359,7)
     Misc.Pause(3000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -919,8 +1001,9 @@ while True:
      ####GO HOME
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
-    Player.PathFindTo(2112, 359, 7)
+    SafePathFindTo(2112, 359, 7)
     Misc.Pause(4500)
+    log_debug("Begin goInside")
 
     goInside()
     smeltAll()
@@ -929,12 +1012,11 @@ while True:
 
     ######### ROUTE 9 #########
       #9.1 - Iron
-    Player.HeadMessage(64,'Starting mining route 9.')
-    Misc.Pause(500)
+    log_debug("Route 9 start")
     if not Player.Mount:
         Mobiles.UseMobile(beetle)
         Misc.Pause(1000)
-    Player.PathFindTo(2089,370,7)
+    SafePathFindTo(2089,370,7)
     Misc.Pause(7000)
     Mobiles.UseMobile(Player.Serial) 
     Misc.Pause(1000)
@@ -946,7 +1028,7 @@ while True:
     mineAtLocation(2088, 369 ,0 ,6012)
 
        #9.2 - Iron
-    Player.PathFindTo(2099,363,7)
+    SafePathFindTo(2099,363,7)
     Misc.Pause(5000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -956,7 +1038,7 @@ while True:
     mineAtLocation(2100, 364 ,5)
     
        #9.3 - Iron
-    Player.PathFindTo(2097,361,7)
+    SafePathFindTo(2097,361,7)
     Misc.Pause(2500)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -967,7 +1049,7 @@ while True:
 
     
        #9.4 - Iron
-    Player.PathFindTo(2108, 337, 7)
+    SafePathFindTo(2108, 337, 7)
     Misc.Pause(6000)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -977,7 +1059,7 @@ while True:
     mineAtLocation(2108, 336 ,12)
     
        #9.5 - Iron
-    Player.PathFindTo(2111,336,7)
+    SafePathFindTo(2111,336,7)
     Misc.Pause(2500)
     Misc.WaitForContext(beetle, 10000) 
     Misc.ContextReply(beetle, bondIndex)
@@ -988,8 +1070,9 @@ while True:
      ####GO HOME
     Mobiles.UseMobile(beetle)
     Misc.Pause(1000)
-    Player.PathFindTo(2111,363,7)
+    SafePathFindTo(2111,363,7)
     Misc.Pause(4000)
+    log_debug("Begin goInside")
 
     goInside()
     smeltAll()

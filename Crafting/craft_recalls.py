@@ -1,5 +1,5 @@
 restockBeetle = False
-amountToMake = 1000
+amountToMake = 5000
 restockChestSerial = 0x42E88440
 dragTime = 1500
 bp = 0x0F7A

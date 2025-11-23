@@ -3,7 +3,10 @@ from System import Int32 as int
 from System import Byte
 from System.Collections.Generic import List
 import time
+import datetime 
 import random
+import os
+import inspect
 
 #Editorial notes: Really just playing with the top two fucntions. Commented out if catches for low health and if the distance opens up on a mob im fighting
 
@@ -12,7 +15,7 @@ excluded_names = ["a dog"]
 #Mark false if you want to run cemetaries 
 #Mark saveDelay false if you want to skip the 90 second wait
 farmRun = True
-saveDelay = False
+saveDelay = True
 #Set to True if checking the loop box for troubleshooting
 looping = False
 
@@ -59,6 +62,8 @@ trash_dict = {
     0x3184: "bowl",
     0x104F: "clock parts",
     0x1F7B: "doublet",
+    0x0C2D: "debris",
+    0x153B: "half apron",
     0x15F8: "dirtypan"
 }
 
@@ -67,36 +72,198 @@ regs = [
 0x0F7A, 0x0F7B,0x0F86,0x0F8C,0x0F84,0x0F88,0x0F85,0x0F8D,
 ]
 
-rune_ids = [0x483B,0x483E,0x4841,0x4844,0x4847,0x484A,0x484D,0x4850,0x4853,0x4856,0x4859,0x485C,0x485F,0x4862,0x4865,0x4868,0x486B,0x4871,0x486E,0x4874,0x4877,0x487A,0x487D,0x4880,0x4883]
-
-loot_list  = [
-    grizzlyStatue_ID, eagleStatue_ID, birdStatue_ID, deerStatue_ID, hide_ID, gold_ID,
-    wood_ID, arrow_ID, wool_ID, pile_ID, cloth_ID,
-    chickenStatue_ID, lizardStatue_ID, skill_scroll_id, wolfStatue_ID, relic_ID, skeleStatue_ID, zombieStatue_ID, zombieStatue2_ID, bandage_ID
+# Define rune IDs
+rune_ids = [
+    0x483B, 0x483E, 0x4841, 0x4844, 0x4847, 0x484A, 0x484D, 0x4850, 0x4853,
+    0x4856, 0x4859, 0x485C, 0x485F, 0x4862, 0x4865, 0x4868, 0x486B, 0x4871,
+    0x486E, 0x4874, 0x4877, 0x487A, 0x487D, 0x4880, 0x4883
 ]
 
-special_list  = [
-    grizzlyStatue_ID, eagleStatue_ID, birdStatue_ID, deerStatue_ID, hide_ID, gold_ID,
-    wood_ID, arrow_ID, wool_ID, pile_ID, cloth_ID,
-    chickenStatue_ID, lizardStatue_ID, skill_scroll_id, wolfStatue_ID, relic_ID, skeleStatue_ID, zombieStatue_ID, zombieStatue2_ID
-]
-
-# New bones list
+# Define bone item IDs
 bones = [
     0x1B17, 0x1B18, 0x1B09, 0x1B0F, 0x1B0A, 0x1B0B, 0x1B0C, 0x1B0D,
     0x1B0E, 0x1B0F, 0x1B10, 0x1B15, 0x1B16, 0x1451, 0x1450, 0x144E,
     0x1452, 0x144F
 ]
 
-# Extend the loot list with the bones list
-loot_list.extend(bones)
-loot_list.extend(rune_ids)
-loot_list.extend(regs)
-special_list.extend(rune_ids)
+# List of rares (includes relics, runes, statues, skill scrolls, cloth, gold)
+rares_list = [
+    relic_ID,
+    skill_scroll_id,
+    gold_ID,
+    cloth_ID,
+    grizzlyStatue_ID,
+    eagleStatue_ID,
+    birdStatue_ID,
+    deerStatue_ID,
+    chickenStatue_ID,
+    lizardStatue_ID,
+    wolfStatue_ID,
+    skeleStatue_ID,
+    zombieStatue_ID,
+    zombieStatue2_ID
+] + rune_ids
+
+# Common loot list (hides, arrows, wood, bones, pile, bandage, etc.)
+common_loot_list = [
+    hide_ID,
+    wood_ID,
+    arrow_ID,
+    wool_ID,
+    pile_ID,
+    bandage_ID
+] + bones
+
+loot_list = rares_list + common_loot_list + regs
 
 fragIDs = [0x2244,0x2243,0x2242,0x2241,0x223D,0x223C,0x2244,0x5349]
 
+goldLog = 'C:/Users/Hurley/Documents/GitHub/UOF-Razor-Enhanced-Scripts/Resource Gathering/goldLog.USR'
+
+# Define cities to check for invasions
+invasion_cities = ["Moonglow", "Yew", "Jhelom", "Britain", "Vesper"]
+
+def SafePathFindTo(x, y, z):
+    try:
+        Player.PathFindTo(x, y, z)
+        log_debug(f"SafePathFindTo succeeded to ({x}, {y}, {z})")
+    except Exception as e:
+        log_debug(f"SafePathFindTo first attempt failed to ({x}, {y}, {z}): {e}")
+        Misc.Pause(5000)
+        try:
+            Player.PathFindTo(x, y, z)
+            log_debug(f"SafePathFindTo retry succeeded to ({x}, {y}, {z})")
+        except Exception as e2:
+            log_debug(f"SafePathFindTo retry failed to ({x}, {y}, {z}): {e2}")
+
+
+def get_invasion_cities():
+    """Checks the [invasions gump and returns a set of cities with active invasions."""
+    Player.ChatSay("[invasions")
+    Gumps.WaitForGump(0, 5000)
+    Misc.Pause(1000)
+
+    gumpID = Gumps.CurrentGump()
+    if gumpID == 0:
+        Misc.SendMessage("No gump opened.", 33)
+        Misc.Pause(1000)
+        return set()
+
+    active_cities = set()
+    page_count = 0
+
+    while True:
+        lines = Gumps.LastGumpGetLineList()
+
+        for i, line in enumerate(lines):
+            if "Running" in line and i >= 3:
+                city_line = lines[i - 3]
+                for city in invasion_cities:
+                    if city in city_line:
+                        active_cities.add(city)
+
+        # Try to go to next page
+        Gumps.SendAction(gumpID, 2)
+        Misc.Pause(1000)
+        page_count += 1
+        if page_count > 10:
+            break
+
+    return active_cities
+
+def log_debug(message=""):
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_dir = r"C:\Users\Hurley\Documents\GitHub\UOF-Razor-Enhanced-Scripts\Debug_logs"
+    log_file = "farmGod_debug_log.txt"
+    log_path = os.path.join(log_dir, log_file)
+
+    # Create folder if it doesnt exist
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
+
+    try:
+        with open(log_path, "a") as log:
+            log.write(f"[{timestamp}] {message}\n")
+    except Exception as e:
+        Misc.SendMessage(f"Logging error: {e}", 33)
+
+def waitForRightOfWay(max_attempts=10):
+    log_debug("waitForRightOfWay")
+    priority_order = ["Realtree", "Tool Time", "ToolmanTailor", "ImaTool"]
+    me = Player.Name
+    my_priority = priority_order.index(me)
+
+    excluded_coords = [(6804, 3897), (6800, 3898), (6800, 3892), (6805, 3892), (6803, 3892)]
+
+    attempt = 0
+    while attempt < max_attempts:
+        blocking = False
+        
+        mobilesFilter = Mobiles.Filter()
+        mobilesFilter.IsHuman = True
+        allNearby = Mobiles.ApplyFilter(mobilesFilter)
+        
+
+        for mob in allNearby:
+            if not mob or not mob.Name or mob.Serial == Player.Serial:
+                continue
+
+            if (mob.Position.X, mob.Position.Y) in excluded_coords:
+                continue  # Ignore characters in known resting spots
+
+            if mob.Name in priority_order:
+                their_priority = priority_order.index(mob.Name)
+                if their_priority < my_priority:
+                    log_debug(f"Waiting for {mob.Name} to go first.")
+                    Misc.Pause(1000)
+                    blocking = True
+                    break
+
+        if not blocking:
+            return True
+
+        wait_time = random.randint(10000, 20000)
+        seconds = wait_time // 1000
+
+        for i in range(seconds, 0, -1):
+            log_debug(f"Waiting... {i}s")
+            Misc.Pause(1000)
+
+        attempt += 1
+
+    log_debug("Too crowded. Giving up.")
+    Misc.Pause(500)
+    return False
+
+def detectMobiles():
+    log_debug("detectMobiles")
+    mobFilter = Mobiles.Filter()
+    mobFilter.Enabled = True
+    mobFilter.IsHuman = True
+    mobFilter.CheckLineOfSight = True
+
+    mobilesList = Mobiles.ApplyFilter(mobFilter)
+
+    ignored_names = {"a restless soul", "realtree", "toolmantailor", "imatool", "alyer base"}
+
+    filteredMobiles = [mob for mob in mobilesList if mob.Name and mob.Name.lower() not in ignored_names]
+
+    if filteredMobiles:
+        mob = filteredMobiles[0]
+        Misc.SendMessage("Mobile detected: {}".format(mob.Name), 33)
+        Misc.Pause(1000)
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_entry = f"{timestamp}, {mob.Name}\n"
+        with open(goldLog, 'a') as file:
+            file.write(log_entry)
+        return True  # Mobile detected
+    return False  # No mobile detected
+
+
+
+            
 def harvestWood():
+    log_debug("harvestWood")
     harvestFilter = Items.Filter()
     harvestFilter.RangeMax = 3
     harvestFilter.Graphics = List[int]([0x74EC]) 
@@ -134,18 +301,18 @@ def harvestWood():
                 Misc.Pause(1000)
                 
             Dress.ChangeList("hatchet")
-            Misc.Pause(500)
+            Misc.Pause(1000)
             Dress.UnDressFStart() 
-            Misc.Pause(500)
+            Misc.Pause(1000)
             Dress.ChangeList("tooltime")
-            Misc.Pause(500)
+            Misc.Pause(1000)
                
     else:
         Misc.Pause(500)
-        Misc.SendMessage("No barricade found")
             
         
 def barricade():
+    log_debug("barricade")
     groundLootFilter = Items.Filter()
     groundLootFilter.Enabled = True
     groundLootFilter.Movable = True
@@ -172,15 +339,11 @@ def moveToTarget(target, max_retry, timeout):
 
     targetPosition = target.Position
     if Player.DistanceTo(target) > 2:
-        Misc.SendMessage("Original target position: {}".format(targetPosition))
-        Misc.Pause(500)
 
         directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # Directions to try: Down, Up, Right, Left
         for dx, dy in directions:
             # Check if the overall timer has exceeded 15 seconds
             if time.time() - overall_start_time > 15:
-                Misc.SendMessage("Overall timeout exceeded. Exiting function.")
-                Misc.Pause(500)
                 return  # Exit the function if the overall timer exceeds 15 seconds
 
             targetCoords = PathFinding.Route()
@@ -189,39 +352,35 @@ def moveToTarget(target, max_retry, timeout):
             targetCoords.X = targetPosition.X + dx
             targetCoords.Y = targetPosition.Y + dy
             
-            success = PathFinding.Go(targetCoords)
-            Misc.Pause(250)
+            try:
+                Player.PathFindTo(targetCoords.X,targetCoords.Y,targetPosition.Z)
+                Misc.Pause(500)
+            except:
+                Misc.Pause(500)
+                
             deadCheck()
             
             startTime = time.time()
             while Player.DistanceTo(target) > 2:
                 # Check if the overall timer has exceeded 15 seconds
                 if time.time() - overall_start_time > 15:
-                    Misc.SendMessage("Overall timeout exceeded. Exiting function.")
                     return  # Exit the function if the overall timer exceeds 15 seconds
 
                 currentTime = time.time()
                 if currentTime - startTime > timeout:
-                    Misc.SendMessage("Timed out, trying next position.")
-                    Misc.Pause(500)
                     break
+                    
             
             # Check if the player is now close enough to the target
             if Player.DistanceTo(target) <= 2:
-                Misc.SendMessage("Successfully moved to target.")
-                Misc.Pause(500)
                 return  # Exit the function once the target is reached
         
         # If all directions fail, log a message
-        Misc.SendMessage("Unable to move to target. All directions tried.")
 
 
-
-
-import time
-import random
 
 def followMobile(mobile):
+    log_debug("followMobile")
     """
     Follows a mobile until the player is within 1 tile of it or the timer times out.
     """
@@ -233,7 +392,6 @@ def followMobile(mobile):
     while mobile:
         elapsed_time = time.time() - start_time
         if elapsed_time > 20:
-            Misc.SendMessage("Timeout exceeded. Stopping follow.")
             break
 
         if Player.DistanceTo(mobile) > 1:
@@ -248,17 +406,14 @@ def followMobile(mobile):
 
             PathFinding.Go(route)
             Misc.Pause(250)
-            Misc.SendMessage(f"Pathfinding to offset ({dx}, {dy})")
-            Misc.Pause(250)
             deadCheck()
         else:
-            Misc.SendMessage("Distance check OK")
-            Misc.Pause(750)
             break
 
 
     
 def combineFrags():
+    log_debug("combineFrags")
     # Step 1: Search the players backpack for a fragment
     originalFrag = None
     for item in Player.Backpack.Contains:
@@ -267,7 +422,6 @@ def combineFrags():
             break
     
     if not originalFrag:
-        Player.HeadMessage(33, "No fragments found in the backpack.")
         return
     
     fragHue = originalFrag.Hue
@@ -280,7 +434,6 @@ def combineFrags():
             break
     
     if not matchingFrag:
-        Player.HeadMessage(33, "No matching fragments found in the container.")
         Items.Move(originalFrag,0x411F0FDE,-1)
         Misc.Pause(1000)
         return
@@ -305,13 +458,12 @@ def combineFrags():
     if combinedFrag:
         Items.Move(combinedFrag,0x411F0FDE,1,155,50)
         Misc.Pause(600)
-    else:
-        Player.HeadMessage(33, "No combined fragment found in the backpack.")
             
             
             
             
 def storeValuables():
+    log_debug("storeValuables")
     EXCLUDED_HUED_ITEMS = {0x22C5, 0x0E79, 0x3679, 0x108A,0x2F5A,0x13DB,0x13DC,0x13D6,0x13DA,0x170B,0x13D5,0x2244,0x2243,0x2242,0x2241,0x223D,0x223C,0x2244,0x5349}
     for i in Player.Backpack.Contains:
         if i.ItemID == relic_ID or i.ItemID == skill_scroll_id:
@@ -320,11 +472,13 @@ def storeValuables():
         elif i.Hue != 0x0000 and i.ItemID not in EXCLUDED_HUED_ITEMS:
             Items.Move(i,0x411F0FDE,1)
             Misc.Pause(1000)
-        elif i.ItemID in special_list:
+        elif i.ItemID in rares_list:
             Items.Move(i,0x411F0FDE,1)
             Misc.Pause(1000)
     
+            
 def repairCheck():
+    log_debug("repairCheck")
     Dagger = Items.FindByID(0x0F52, -1, Player.Backpack.Serial)
     if Dagger is not None:
         prop_list = Items.GetPropStringByIndex(Dagger, 8) #7 if non-slayer
@@ -338,13 +492,11 @@ def repairCheck():
                     Items.Move(Dagger, 0x41547DA9, 1)
                     Misc.Pause(1500)
                     getDagger()
-    else:
-        # Handle the case where no Dagger was found
-        Misc.SendMessage("No Dagger found")
 
     
 
 def manaCheck():
+    log_debug("manaCheck")
     if Journal.SearchByType("Insufficient mana for this spell.","System"):
         Misc.Pause(8000)
         killGame()
@@ -352,6 +504,7 @@ def manaCheck():
         Journal.Clear()
     
 def findCorpses(move_enabled):
+    log_debug("findCorpses")
     """
     Find corpses within a specified range.
     :param move_enabled: Boolean to determine the RangeMax value (True for 10, False for 2)
@@ -368,29 +521,35 @@ def findCorpses(move_enabled):
     corpses_filter.Graphics = List[int]([0x2006])  # Corpses only
     corpses_filter.CheckIgnoreObject = True  # optional
 
+
     corpse_list = Items.ApplyFilter(corpses_filter)  # returns list of items
 
     return corpse_list
 
 
 def lootCorpse(corpse):
-    Misc.SendMessage("lootCorpse begin")
-    Misc.Pause(500)
+    log_debug("lootCorpse begin")
     for item_to_loot in corpse.Contains:
-        Misc.SendMessage("found a {} with ID {}".format(item_to_loot.Name, item_to_loot.ItemID),130)
-        Misc.Pause(10)
+
         shouldLoot = False
-        if checkItemByID(item_to_loot, loot_list):
-            shouldLoot = True
-                
+        current_weight = Player.Weight
+
+        if current_weight < 300:
+            if checkItemByID(item_to_loot, loot_list):  # loot_list contains both common and rare
+                shouldLoot = True
+        else:
+            if checkItemByID(item_to_loot, rares_list):  # only loot rares over weight limit
+                shouldLoot = True
+
         if shouldLoot:
-            Items.Move(item_to_loot,Player.Backpack,-1 ) # -1 -> all, for stackable items
-            Misc.Pause(750)
-    Misc.SendMessage("lootCorpse end")
-    Misc.Pause(500)
+            Items.Move(item_to_loot, Player.Backpack, -1)  # -1 -> all, for stackables
+            Misc.Pause(1000)
+
+
 
             
 def checkItemByID(item_to_check, valid_ids):
+    log_debug("checkItemByID")
     excluded_ids = [0x5744]  # e.g., worm
     # ❌ Always skip if in excluded list
     if item_to_check.ItemID in excluded_ids:
@@ -400,8 +559,7 @@ def checkItemByID(item_to_check, valid_ids):
     return item_to_check.ItemID in valid_ids or item_to_check.Hue != 0x0000
 
 def lootGame(move_enabled=True):  # Add a parameter to control movement
-    Misc.SendMessage("lootGame begin")
-    Misc.Pause(500)
+    log_debug("lootGame begin")
     crps_list = findCorpses(move_enabled)
     crps_list = sorted(crps_list, key=lambda corpse: Player.DistanceTo(corpse))
 
@@ -415,10 +573,11 @@ def lootGame(move_enabled=True):  # Add a parameter to control movement
         # Use knife or dagger to slice
         if Items.FindByID(0x0EC4, -1, Player.Backpack.Serial):
             Items.UseItemByID(0x0EC4, -1)
+            Misc.Pause(500)
         else:
             Items.UseItemByID(0x0F52, -1)
+            Misc.Pause(500)
         
-        Misc.Pause(500)
         Target.TargetExecute(current_corpse)
         Misc.Pause(500)
         lootCorpse(current_corpse)
@@ -437,22 +596,21 @@ def lootGame(move_enabled=True):  # Add a parameter to control movement
         # Stop looting if player is overweight
         if Player.Weight > 340:
             break
-        Misc.SendMessage("lootGame end")
-        Misc.Pause(500)
 
     
 def healthCheck():
+    log_debug("healthCheck")
     if Player.Hits < 35:
-        Player.HeadMessage(64,"This is getting a little hairy...  "+str(Player.Hits)+" health.")
-        Misc.Pause(500)
         goHome()
         Misc.ScriptStop("FarmGod.py")
         
 
 def attempt_recall(location):
+    log_debug("attempt_recall")
     while True:
+        worldSave()
         Player.ChatSay(f"[recall {location}")
-        Misc.Pause(2500)  # Wait for the spell to cast
+        Misc.Pause(3000)  # Wait for the spell to cast
 
         # Check if the spell was disturbed
         if Journal.SearchByType("Your concentration is disturbed, thus ruining thy spell.", "System"):
@@ -467,6 +625,9 @@ def attempt_recall(location):
         elif Journal.SearchByType("Insufficient mana for this spell.","System"):
             while Player.Mana < 11:
                 Misc.Pause(1000)
+                if Player.Hits < Player.HitsMax:
+                    killGame()
+                    Misc.Pause(500)
             Misc.Pause(1000)
             killGame()
             Journal.Clear()
@@ -492,9 +653,11 @@ def attempt_recall(location):
             break  # Exit the loop if no disturbance is detected
 
 def worldSave():
+    log_debug("worldSave")
     if (Journal.SearchByType('The world will save in 1 minute.', 'System') or Journal.SearchByType('pause', 'Regular')):
         Misc.Pause(700)
         Misc.SendMessage('Pausing for world save or player-called break.', 33)
+        Misc.Pause(500)
         while (not Journal.SearchByType('World save complete.', 'System') and not Journal.SearchByType('play', 'Regular')):
             Misc.Pause(1000)
         Misc.Pause(2500)
@@ -503,6 +666,7 @@ def worldSave():
     Journal.Clear()  
 
 def stockRegs():
+    log_debug("stockRegs")
     root = Items.BackpackCount(0x0F86,-1)
     moss = Items.BackpackCount(0x0F7B,-1)
     pearl = Items.BackpackCount(0x0F7A,-1)
@@ -573,12 +737,13 @@ def stockRegs():
     
 
 def deadCheck():
+    log_debug("deadCheck")
     if Player.IsGhost:
         Player.ChatSay("Im dead")
         Misc.Pause(500)
         Player.ChatSay("I seek forgiveness")
         Misc.Pause(2000)
-        Player.PathFindTo(1474, 1609, 20)
+        SafePathFindTo(1474, 1609, 20)
         Misc.Pause(2000)
         Items.UseItem(0x472869ED)
         Misc.Pause(500)
@@ -597,6 +762,7 @@ def deadCheck():
         goHome()
     
 def spinBolts():   
+    log_debug("spinBolts")
     rawmats = [0x0DF9, 0x1A9C, 0x1A9D, 0x0DF8]
 
     for item_id in rawmats:
@@ -628,90 +794,25 @@ def spinBolts():
                 else:
                     break
 
-def checkPositionAndMobiles(expectedX, expectedY):
-    """
-    Check if the player is at the expected position and ensure no mobiles are within 3 tiles,
-    excluding those at specific coordinates. If mobiles are found, pause randomly 5 times 
-    (30-60s in 5s steps) with countdown messages every 10 seconds. If still present, stop all scripts.
-    """
-    Misc.SendMessage(f"Checking position: Expected ({expectedX}, {expectedY}), Current ({Player.Position.X}, {Player.Position.Y})", 77)
-    Misc.Pause(500)
-    if Player.IsGhost:
-        return
-
-    # Confirm player is in correct position
-    if Player.Position.X != expectedX or Player.Position.Y != expectedY:
-        Misc.SendMessage("Player not at expected location. Retrying goHome().", 33)
-        goHome()
-        return
-
-    # Set up mobile detection filter
-    mobilesFilter = Mobiles.Filter()
-    mobilesFilter.RangeMax = 2
-    mobilesFilter.Notorieties = List[Byte](bytes([1, 2, 3, 4]))
-    mobilesFilter.IsHuman = True
-
-    # Apply filter and exclude specific coordinates
-    excluded_coords = [(6804, 3897), (6800, 3898)]
-
-    def getFilteredMobiles():
-        allNearby = Mobiles.ApplyFilter(mobilesFilter)
-        return [m for m in allNearby if (m.Position.X, m.Position.Y) not in excluded_coords]
-
-    nearbyMobiles = getFilteredMobiles()
-
-    if len(nearbyMobiles) == 0:
-        Misc.SendMessage("Pass: Player is in the correct position and no valid mobiles are nearby.", 77)
-        Misc.Pause(500)
-        return
-
-    # If mobiles are nearby, begin random pause attempts
-    Misc.SendMessage(f"Mobiles detected: {len(nearbyMobiles)} (excluding known positions). Beginning random pause attempts.", 33)
-    Misc.Pause(500)
-    
-    for attempt in range(5):
-        delaySeconds = random.choice(range(30, 65, 5))
-        Misc.SendMessage(f"Pause attempt {attempt + 1}/5: Total wait time {delaySeconds} seconds...", 33)
-        Misc.Pause(500)
-        # Countdown every 10 seconds
-        secondsRemaining = delaySeconds
-        while secondsRemaining > 0:
-            Player.HeadMessage(33, f"Pausing... {secondsRemaining} seconds remaining")
-            Misc.Pause(500)
-            waitTime = min(10, secondsRemaining)
-            Misc.Pause(waitTime * 1000)
-            secondsRemaining -= waitTime
-
-        # Recheck for filtered mobiles
-        nearbyMobiles = getFilteredMobiles()
-        if len(nearbyMobiles) == 0:
-            Misc.SendMessage("Mobiles cleared. Resuming.", 77)
-            Misc.Pause(500)
-            return
-
-    # After all 5 pauses, if mobiles still nearby, stop script
-    Misc.SendMessage("Mobiles still present after 5 attempts. Stopping all scripts.", 33)
-    Misc.Pause(500)
-    Misc.ScriptStopAll(False)
-
                        
 
 def goHome():
+    log_debug("goHome")
     EXCLUDED_HUED_ITEMS = [0x108A,0x22C5] #ring, rune book
     trashlist = [0x0DE1,0x1EBD,0x0F49,0x0FF0,0x0FF1,0x0FF2,0x0FF3,0x0FEF,0x09F9,0x0F6B,0x0FFF,0x0FC7,0x09F4,0x3184,0x15F8,0x09DE] #kindling, bushel, axe,book1-4,spoon, torch, mug, firehorn,fork,hops,bowl,dirtypan1
     attempt_recall("Winter Lodge")
-    checkPositionAndMobiles(6802, 3902)
+    waitForRightOfWay()
     deadCheck()
-    Player.PathFindTo(6802, 3901, 12)
+    SafePathFindTo(6802, 3901, 12)
     Misc.Pause(1500)
     door = Items.FindBySerial(0x42F89EDC)
-    if door.ItemID == 0x0677:
+    if door and door.ItemID == 0x0677:
         Items.UseItem(door)
         Misc.Pause(500)
-    Player.PathFindTo(6802, 3900, 12)
+    SafePathFindTo(6802, 3900, 12)
     Misc.Pause(500)
-    checkPositionAndMobiles(6802, 3900)
-    Player.PathFindTo(6803, 3897, 17)
+    waitForRightOfWay()
+    SafePathFindTo(6803, 3898, 17)
     Misc.Pause(2500)
     spinBolts()
     Items.UseItem(0x42E87E92)
@@ -755,7 +856,7 @@ def goHome():
     Items.UseItem(0x42E88440)
     Misc.Pause(500)
     stockRegs()
-    Player.PathFindTo(6800, 3892, 17)
+    SafePathFindTo(6800, 3892, 17)
     Misc.Pause(4500)
     Items.UseItem(0x411F0FDE)
     Misc.Pause(500)
@@ -766,78 +867,38 @@ def goHome():
 
     
 def armSelf():
+    log_debug("armSelf")
     equipAttempts = 0
     while equipAttempts < 3:  # Limit the number of attempts to 3
         if Player.CheckLayer("RightHand"):
+            Misc.Pause(500)
             # Weapon is already in hand, no need to continue.
             break
         else:
             Dagger = Items.FindByID(0x0F52, -1, Player.Backpack.Serial)
             if Dagger:
                 Player.EquipItem(Dagger)
-                Misc.Pause(500)
+                Misc.Pause(1000)
                 if Player.CheckLayer("RightHand"):
+                    Misc.Pause(500)
                     # Dagger successfully equipped.
                     break
                 else:
                     # Equip attempt failed, increment the counter.
                     equipAttempts += 1
-                    Player.HeadMessage(64, "Attempt to equip Dagger failed.")
             else:
                 # Dagger not found in the backpack.
-                Player.HeadMessage(64, "Dagger not found, looking again.")
                 equipAttempts += 1
-                Misc.Pause(750)
+
 
     if equipAttempts >= 3:
         # Failed to equip the Dagger after 3 attempts or Dagger not found.
-        Player.HeadMessage(64, "Failed to equip Dagger or not found. Going home.")
         goHome()
         Misc.ScriptStop("FarmGod.py")
-        
-    
-        
-def killChickens():
-    armSelf()
-    Misc.Pause(500)
-    while True:
-        chickenFilter = Mobiles.Filter()
-        chickenFilter.Enabled = True
-        chickenFilter.Notorieties = List[Byte](bytes([3,4,6]))
-        chickenFilter.Hues = List[int]([0x0000])
-        chickenFilter.RangeMax = 2
-        chickenList = Mobiles.ApplyFilter(chickenFilter)
-        
-        if len(chickenList) == 0:
-            break
-
-        for chicken in chickenList:
-            # Refresh the chicken just in case it's gone
-            chicken = Mobiles.FindBySerial(chicken.Serial)
-            if not chicken:
-                continue
-
-            Player.Attack(chicken)
-            Misc.Pause(500)
-            turn_opposite_to_mobile(chicken)
-
-            while Player.DistanceTo(chicken) > 1:
-                Misc.Pause(250)
-                if not Mobiles.FindBySerial(chicken.Serial):
-                    break
-
-            while Mobiles.FindBySerial(chicken.Serial):
-                Misc.Pause(500)
-                if Player.DistanceTo(chicken) > 1:
-                    break
-                deadCheck()
-            Misc.Pause(500)
-
-        lootGame(move_enabled=True)
-
-            
+                  
 
 def killChaseGame():
+    log_debug("killChaseGame")
     excluded_names = ["a dog"]
 
     def calculate_distance(item):
@@ -845,7 +906,6 @@ def killChaseGame():
         return Player.DistanceTo(item)
 
     def restart_function():
-        Misc.SendMessage("Time limit exceeded, restarting killGame function.")
         Misc.ClearIgnore()
         killGame()
         
@@ -870,83 +930,31 @@ def killChaseGame():
         
         gameList = [mob for mob in gameList if mob.Name.lower() not in excluded_names]
         
-        gameList = sorted(gameList, key=calculate_distance)
+        priority_names = ["a shade", "a wraith", "a skeletal knight"]
+
+        # Assign priority based on name, then sort by distance
+        gameList = sorted(
+            gameList,
+            key=lambda mob: (
+                priority_names.index(mob.Name.lower()) if mob.Name.lower() in priority_names else float('inf'),
+                calculate_distance(mob)
+            )
+        )
 
         if len(gameList) == 0:
-            Misc.SendMessage("No more in-range targets.")
-            Misc.Pause(500)
             break
 
         for game in gameList:
             engagement_start_time = time.time()
             if Player.Weight > 340:
-                Misc.SendMessage("Overweight, stopping.")
-                Misc.Pause(500)
-                attempt_recall("Winter Lodge")
-                deadCheck()
-                Player.PathFindTo(6802, 3901, 12)
-                Misc.Pause(1500)
-                Player.PathFindTo(6803, 3897, 17)
-                Misc.Pause(2500)
-                spinBolts()
-                Items.UseItem(0x42E87E92)
-                Misc.Pause(500)
-                Items.UseItem(0x435ED948)
-                Misc.Pause(500)
-                cutBones()
-                lootList = [0x1BD1,0x09F1,0x0EED]
-                for i in Player.Backpack.Contains:
-                    if i.ItemID == 0x0F95 or i.ItemID == 0x1081 or i.ItemID == 0x0F7E: #bolt, leather, bones
-                        Items.Move(i,0x435ED948,-1)
-                        Misc.Pause(1000)
-                for i in Player.Backpack.Contains:
-                    if i.ItemID in lootList: #feather, meat, or gold
-                        Items.Move(i,0x42E87E92,-1)
-                        Misc.Pause(1000)
-                bandages = Items.BackpackCount(0x0E21,-1)
-                bolts = Items.ContainerCount(0x435ED948,0x0F95,-1)
-                bandages = Items.BackpackCount(0x0E21,-1)
-                bolts = Items.FindByID(0x0F95,-1,0x435ED948)
-                if bandages < 100:
-                    Misc.Pause(500)
-                    Items.Move(bolts,Player.Backpack.Serial,2)
-                    Misc.Pause(1000)
-                    Items.UseItemByID(0x0F9F,-1)
-                    Misc.Pause(500)
-                    packbolts = Items.FindByID(0x0F95,-1,Player.Backpack.Serial)
-                    Target.TargetExecute(packbolts)
-                    Misc.Pause(500)
-                    packcloth = Items.FindByID(0x1766,-1,Player.Backpack.Serial)
-                    Items.UseItemByID(0x0F9F,-1)
-                    Misc.Pause(500)
-                    Target.TargetExecute(packcloth)
-                    Misc.Pause(500)  
-                Misc.Pause(500)
-                Items.UseItem(0x42E88440)
-                Misc.Pause(500)
-                stockRegs()
-                Player.PathFindTo(6800, 3898, 17)
-                Misc.Pause(2500)
-                Items.UseItem(0x411F0FDE)
-                Misc.Pause(500)
-                storeValuables()
-                combineFrags()
-                repairCheck()
-                getDagger()
+                goHome()
                 Misc.ScriptStop("FarmGod.py")
-
-            if game.Name == "a corpser":
-                Misc.SendMessage("Corpser, ignoring.")
                 Misc.Pause(500)
-                Misc.IgnoreObject(game)
-                continue
 
 
-            Misc.SendMessage("Engaging " + str(game.Name))
             Player.Attack(game)
             elapsed_time = time.time() - overall_start_time
             Misc.Pause(500)
-            Misc.SendMessage(f"Elapsed time: {elapsed_time:.2f} seconds", 33)
             # Check if the overall time limit has been exceeded
             if time.time() - overall_start_time > overall_time_limit:
                 restart_function()
@@ -958,41 +966,29 @@ def killChaseGame():
             while Player.DistanceTo(game) > 1:
                 # Check overall timer
                 if time.time() - overall_start_time > overall_time_limit:
-                    goHome()
-                    Player.ChatSay(64,"Likely provo trap found")
-                    Misc.Pause(500)
-                    Misc.ScriptStop("FarmGod.py")  # Exit the current function to restart it
+                    return
 
                 # Check engagement timer
                 if time.time() - engagement_start_time > 20:
-                    Misc.SendMessage("Combat timeout, disengaging.")
                     break
                     
-                if time.time() - overall_start_time > overall_time_limit:
-                    restart_function()
-                    return  # Exit the current function to restart it
 
 
                 if game.Hits < 13:
-                    Misc.SendMessage("Target low health, disengaging.")
                     break
 
                 Misc.Pause(250)
                 
-            turn_opposite_to_mobile(game)
 
             while Mobiles.FindBySerial(game.Serial):
                 # Check overall timer
                 elapsed_time = time.time() - overall_start_time
-                Misc.SendMessage(f"Elapsed time: {elapsed_time:.2f} seconds", 33)
-                Misc.Pause(500)
                 if time.time() - overall_start_time > overall_time_limit:
                     restart_function()
                     return  # Exit the current function to restart it
 
                 # Check engagement timer
                 if time.time() - engagement_start_time > 25:
-                    Misc.SendMessage("Combat timeout, disengaging.")
                     break
 
                 Misc.Pause(500)
@@ -1008,12 +1004,13 @@ def killChaseGame():
         
                     
 def killGame():
+    log_debug("killGame")
     def calculate_distance(item):
         # Function to calculate distance from the player to an item
         return Player.DistanceTo(item)
 
     def restart_function():
-        Misc.SendMessage("Time limit exceeded, restarting killGame function.")
+        log_debug("Time limit exceeded, restarting killGame function.")
         Misc.ClearIgnore()
         killGame()
         
@@ -1034,90 +1031,36 @@ def killGame():
         gameFilter.RangeMax = 9
         gameFilter.CheckIgnoreObject = True
         gameFilter.CheckLineOfSight = True
-        gameFilter.Hues = List[int]([0x0000])
         gameList = Mobiles.ApplyFilter(gameFilter)
-        gameList = sorted(gameList, key=calculate_distance)
+        
+        priority_names = ["a shade", "a wraith", "a skeletal knight"]
 
+        # Assign priority based on name, then sort by distance
+        gameList = sorted(
+            gameList,
+            key=lambda mob: (
+                priority_names.index(mob.Name.lower()) if mob.Name.lower() in priority_names else float('inf'),
+                calculate_distance(mob)
+            )
+        )
         if len(gameList) == 0:
-            Misc.SendMessage("No more in-range targets.")
-            Misc.Pause(500)
             break
 
         for game in gameList:
             engagement_start_time = time.time()
             if Player.Weight > 340:
-                Misc.SendMessage("Overweight, stopping.")
-                Misc.Pause(500)
-                attempt_recall("Winter Lodge")
-                deadCheck()
-                Player.PathFindTo(6802, 3901, 12)
-                Misc.Pause(1500)
-                Player.PathFindTo(6803, 3897, 17)
-                Misc.Pause(2500)
-                spinBolts()
-                Items.UseItem(0x42E87E92)
-                Misc.Pause(500)
-                Items.UseItem(0x435ED948)
-                Misc.Pause(500)
-                cutBones()
-                lootList = [0x1BD1,0x09F1,0x0EED]
-                for i in Player.Backpack.Contains:
-                    if i.ItemID == 0x0F95 or i.ItemID == 0x1081 or i.ItemID == 0x0F7E: #bolt, leather, bones
-                        Items.Move(i,0x435ED948,-1)
-                        Misc.Pause(1000)
-                for i in Player.Backpack.Contains:
-                    if i.ItemID in lootList: #feather, meat, or gold
-                        Items.Move(i,0x42E87E92,-1)
-                        Misc.Pause(1000)
-                bandages = Items.BackpackCount(0x0E21,-1)
-                bolts = Items.ContainerCount(0x435ED948,0x0F95,-1)
-                bandages = Items.BackpackCount(0x0E21,-1)
-                bolts = Items.FindByID(0x0F95,-1,0x435ED948)
-                if bandages < 100:
-                    Misc.Pause(500)
-                    Items.Move(bolts,Player.Backpack.Serial,2)
-                    Misc.Pause(1000)
-                    Items.UseItemByID(0x0F9F,-1)
-                    Misc.Pause(500)
-                    packbolts = Items.FindByID(0x0F95,-1,Player.Backpack.Serial)
-                    Target.TargetExecute(packbolts)
-                    Misc.Pause(500)
-                    packcloth = Items.FindByID(0x1766,-1,Player.Backpack.Serial)
-                    Items.UseItemByID(0x0F9F,-1)
-                    Misc.Pause(500)
-                    Target.TargetExecute(packcloth)
-                    Misc.Pause(500)  
-                Misc.Pause(500)
-                Items.UseItem(0x42E88440)
-                Misc.Pause(500)
-                stockRegs()
-                Player.PathFindTo(6800, 3898, 17)
-                Misc.Pause(2500)
-                Items.UseItem(0x411F0FDE)
-                Misc.Pause(500)
-                storeValuables()
-                combineFrags()
-                repairCheck()
-                getDagger()
+                goHome()
                 Misc.ScriptStop("FarmGod.py")
-
-            if game.Name == "a corpser":
-                Misc.SendMessage("Corpser, ignoring.")
                 Misc.Pause(500)
-                Misc.IgnoreObject(game)
-                continue
+
 
             if game.Hits < 5:
-                Misc.SendMessage("Low health, ignoring.")
-                Misc.Pause(500)
                 Misc.IgnoreObject(game)
                 continue
 
-            Misc.SendMessage("Engaging " + str(game.Name))
             Player.Attack(game)
             elapsed_time = time.time() - overall_start_time
             Misc.Pause(500)
-            Misc.SendMessage(f"Elapsed time: {elapsed_time:.2f} seconds", 33)
             # Check if the overall time limit has been exceeded
             if time.time() - overall_start_time > overall_time_limit:
                 restart_function()
@@ -1129,41 +1072,30 @@ def killGame():
             while Player.DistanceTo(game) > 1:
                 # Check overall timer
                 if time.time() - overall_start_time > overall_time_limit:
-                    goHome()
-                    Player.ChatSay(64,"Likely provo trap found")
-                    Misc.Pause(500)
-                    Misc.ScriptStop("FarmGod.py")  # Exit the current function to restart it
+                    return
+
 
                 # Check engagement timer
                 if time.time() - engagement_start_time > 30:
-                    Misc.SendMessage("Combat timeout, disengaging.")
                     break
                     
-                if time.time() - overall_start_time > overall_time_limit:
-                    restart_function()
-                    return  # Exit the current function to restart it
 
 
                 if game.Hits < 13:
-                    Misc.SendMessage("Target low health, disengaging.")
                     break
 
                 Misc.Pause(250)
                 
-            turn_opposite_to_mobile(game)
 
             while Mobiles.FindBySerial(game.Serial):
                 # Check overall timer
                 elapsed_time = time.time() - overall_start_time
-                Misc.SendMessage(f"Elapsed time: {elapsed_time:.2f} seconds", 33)
-                Misc.Pause(500)
                 if time.time() - overall_start_time > overall_time_limit:
                     restart_function()
                     return  # Exit the current function to restart it
 
                 # Check engagement timer
                 if time.time() - engagement_start_time > 25:
-                    Misc.SendMessage("Combat timeout, disengaging.")
                     break
 
                 Misc.Pause(500)
@@ -1171,15 +1103,13 @@ def killGame():
                 armSelf()
 
                 if Player.DistanceTo(game) > 1:
-                    Misc.SendMessage("Too far, disengaging.")
-                    Misc.Pause(200)
                     break
 
                 deadCheck()
 
             deadCheck()
             break
-        
+
             
         
     
@@ -1187,15 +1117,18 @@ def killGame():
     checkWeight()
     
 def calculate_distance(item):
+    log_debug("calculate_distance")
     # Function to calculate distance from the player to an item
     return Player.DistanceTo(item)   
     
 def checkWeight():
+    log_debug("checkWeight")
     if Player.Weight > 370:
         goHome()
         Misc.ScriptStop("FarmGod.py")
         
 def reapField():
+    log_debug("reapField")
     def calculate_distance(item):
         # Function to calculate distance from the player to an item
         return Player.DistanceTo(item)
@@ -1209,9 +1142,6 @@ def reapField():
         flaxList = Items.ApplyFilter(flaxFilter)
         flaxList = sorted(flaxList, key=calculate_distance)
         
-        if len(flaxList) == 0:
-            Misc.SendMessage("No more flax to reap.")
-            Misc.Pause(500)
             
         flaxList = sorted(flaxList, key=calculate_distance)
         
@@ -1236,6 +1166,7 @@ def reapField():
                 Misc.Pause(500)
                 deadCheck()
 def cutBones():
+    log_debug("cutBones")
     for i in Player.Backpack.Contains:
         if i.ItemID in bones:
             Items.UseItemByID(0x0F9F,-1)
@@ -1244,6 +1175,7 @@ def cutBones():
             Misc.Pause(500)
         
 def reapTrash():
+    log_debug("reapTrash")
     def calculate_distance(item):
         # Function to calculate distance from the player to an item
         return Player.DistanceTo(item)
@@ -1258,10 +1190,6 @@ def reapTrash():
         trashFilter.RangeMax = 6
         trashFilter.Graphics = List[int]([0x0CBB,0x0C58,0x0CA5,0x0C57,0x0C55,0x0C56])
         trashList = Items.ApplyFilter(trashFilter)
-
-        if len(trashList) == 0:
-            Misc.SendMessage("No more weeds to pull.")
-            Misc.Pause(500)
 
 
         trashList = sorted(trashList, key=calculate_distance)
@@ -1280,9 +1208,17 @@ def reapTrash():
             trashCoords.X = trashPosition.X
             trashCoords.Y = trashPosition.Y
             PathFinding.Go(trashCoords)
-                
+            
+            
+        starttime = time.time()        
         while Player.DistanceTo(trash) > 1:
             Misc.Pause(500)
+            currenttime = time.time()
+            if currenttime - starttime > 10:
+                break
+            
+            
+           
 
         if trash:
             Items.UseItem(trash)
@@ -1304,74 +1240,44 @@ def reapTrash():
             Misc.Pause(1000)
 
 def getDagger():
-    Dagger = Items.FindByID(0x0F52, -1, Player.Backpack.Serial)
-    if Dagger:
-        Misc.SendMessage("Dagger found in backpack")
-        Misc.Pause(500)
+    log_debug("getDagger")
+
+    # Check if dagger is in backpack
+    dagger = Items.FindByID(0x0F52, -1, Player.Backpack.Serial)
+    if dagger:
         return
 
+    # Check if dagger is equipped
     equippedDagger = Player.GetItemOnLayer("LeftHand")
     if equippedDagger and equippedDagger.ItemID == 0x0F52:
-        Misc.SendMessage("Dagger equipped.")
-        Misc.Pause(500)
         return
 
+    # Attempt to retrieve dagger from storage
     storageBagSerial = 0x411F0FDE
     storageDagger = Items.FindByID(0x0F52, -1, storageBagSerial)
+
     if storageDagger:
-        Misc.SendMessage("Dagger found in storage bag, moving to backpack")
-        Misc.Pause(500)
         Items.Move(storageDagger, Player.Backpack.Serial, 1)
         Misc.Pause(1000)
+
+        # Optional: double-check move success
+        confirm = Items.FindByID(0x0F52, -1, Player.Backpack.Serial)
+        if not confirm:
+            log_debug("Failed to move dagger to backpack")
+            Misc.ScriptStop("FarmGod.py")
     else:
-        Misc.SendMessage("No Dagger found in storage bag, terminating script")
-        Misc.Pause(500)
+        log_debug("No dagger found in storage!")
         Misc.ScriptStop("FarmGod.py")
+
             
-        
-# Define a function to get the opposite direction
-def get_opposite_direction(direction):
-    opposite_directions = {
-        "North": "South",
-        "South": "North",
-        "East": "West",
-        "West": "East",
-        "Up": "Down",
-        "Down": "Up",
-        "Left": "Right",
-        "Right": "Left"
-    }
-    return opposite_directions[direction]
 
 # Define a function to turn the character in the opposite direction of the mobile
-def turn_opposite_to_mobile(mobile):
-    # Add a random pause between 100 and 800 milliseconds
-    pause_time = random.randint(100, 1500)
-    Misc.Pause(pause_time)
-    
-    # Get the direction the mobile is facing
-    mobile_direction = mobile.Direction
 
-    # Calculate the opposite direction
-    opposite_direction = get_opposite_direction(mobile_direction)
-
-    # Get the current direction of the character
-    current_direction = Player.Direction
-    
-    
-    # Turn the character to the opposite direction if not already facing it
-    if current_direction != opposite_direction:
-        
-        
-        Player.Walk(opposite_direction)
-        Misc.Pause(250)
-        
 
 
 def invasionCheck():    
+    log_debug("invasionCheck")
     if Journal.SearchByType("Defenders are needed ","System"):
-        Player.ChatSay("Sounds like danger afoot in the towns")
-        Misc.Pause(500)
         Items.UseItem(0x411F0FDE)
         Misc.Pause(500)
         getDagger()
@@ -1384,13 +1290,21 @@ def invasionCheck():
         # List of possible locations with settings for killGame type and move_enabled for lootGame
         locations_settings = {
             "Jhelom Cemetary": {"kill_function": "killGame", "move_enabled": False},
-            "Britain Cemetary": {"kill_function": "killChaseGame", "move_enabled": True},
+            "Britain Cemetary": {"kill_function": "killChaseGame", "move_enabled": False},
             "Yew Cemetary": {"kill_function": "killGame", "move_enabled": False},
+            "Britain Gap": {"kill_function": "killGame", "move_enabled": False},
             "Lizards": {"kill_function": "killChaseGame", "move_enabled": True},
-            "Mummies": {"kill_function": "killGame", "move_enabled": True},
+            "Mummies": {"kill_function": "killGame", "move_enabled": False},
             "Moonglow Cemetary": {"kill_function": "killGame", "move_enabled": False},
-            "Deceit": {"kill_function": "killChaseGame", "move_enabled": True},
+            "Vesper": {"kill_function": "killGame", "move_enabled": False},
+            "Britain Chamber": {"kill_function": "killGame", "move_enabled": False},
+            "Yew Chamber": {"kill_function": "killChaseGame", "move_enabled": True},
         }
+
+        # Get active invasions once
+        active_invasions = get_invasion_cities()
+        Misc.SendMessage(f"Skipping cities under invasion: {', '.join(active_invasions)}", 34)
+        Misc.Pause(1000)
 
         # Shuffle the list of locations to create a randomized order
         locations = list(locations_settings.keys())
@@ -1398,26 +1312,32 @@ def invasionCheck():
 
         # Loop through each location
         for location in locations:
-            # Attempt recall to the location
-            attempt_recall(location)
-            Misc.Pause(2500)
+            for city in active_invasions:
+                if city in location:
+                    Misc.SendMessage(f"Skipping {location} due to active invasion in {city}", 33)
+                    Misc.Pause(1000)
+                    break
+            else:
+                    # Attempt recall to the location
+                attempt_recall(location)
+                Misc.Pause(500)
 
-            # Get the settings for the location
-            settings = locations_settings[location]
+                # Get the settings for the location
+                settings = locations_settings[location]
 
-            # Dynamically call the appropriate kill function
-            if settings["kill_function"] == "killGame":
-                killGame()
-            elif settings["kill_function"] == "killChaseGame":
-                killChaseGame()
+                # Dynamically call the appropriate kill function
+                if settings["kill_function"] == "killGame":
+                    killGame()
+                elif settings["kill_function"] == "killChaseGame":
+                    killChaseGame()
 
-            # Perform other actions
-            checkWeight()
-            worldSave()
+                # Perform other actions
+                checkWeight()
+                worldSave()
 
-            # Dynamically call lootGame with the appropriate move_enabled setting
-            lootGame(move_enabled=settings["move_enabled"])
-            
+                # Dynamically call lootGame with the appropriate move_enabled setting
+                lootGame(move_enabled=settings["move_enabled"])
+
         goHome()
         Misc.ClearIgnore()    
         Misc.ScriptStop("FarmGod.py")
@@ -1444,135 +1364,202 @@ locations_settings = {
     "Jhelom Cemetary": {"kill_function": "killGame", "move_enabled": False},
     "Britain Cemetary": {"kill_function": "killChaseGame", "move_enabled": False},
     "Yew Cemetary": {"kill_function": "killGame", "move_enabled": False},
+    "Britain Gap": {"kill_function": "killGame", "move_enabled": False},
     "Lizards": {"kill_function": "killChaseGame", "move_enabled": True},
-    "Mummies": {"kill_function": "killGame", "move_enabled": True},
+    "Mummies": {"kill_function": "killGame", "move_enabled": False},
     "Moonglow Cemetary": {"kill_function": "killGame", "move_enabled": False},
-    "Deceit": {"kill_function": "killChaseGame", "move_enabled": True},
+    "Vesper": {"kill_function": "killGame", "move_enabled": False},
+    "Britain Chamber": {"kill_function": "killGame", "move_enabled": False},
+    "Yew Chamber": {"kill_function": "killChaseGame", "move_enabled": True},
 }
+
+# Get active invasions once
+active_invasions = get_invasion_cities()
+Misc.SendMessage(f"Skipping cities under invasion: {', '.join(active_invasions)}", 34)
+Misc.Pause(1000)
 
 # Shuffle the list of locations to create a randomized order
 locations = list(locations_settings.keys())
 random.shuffle(locations)
 
-# Loop through each location
+# Loop through each locationSkip to next location
 for location in locations:
-    # Attempt recall to the location
-    attempt_recall(location)
-    Misc.Pause(500)
+    for city in active_invasions:
+        if city in location:
+            Misc.SendMessage(f"Skipping {location} due to active invasion in {city}", 33)
+            Misc.Pause(1000)
+            break
+    else:
+            # Attempt recall to the location
+        attempt_recall(location)
+        Misc.Pause(500)
+        if detectMobiles():
+            Misc.SendMessage("Skipping location due to mobile presence", 33)
+            Misc.Pause(1000)
+            continue  # Skip to next location
 
-    # Get the settings for the location
-    settings = locations_settings[location]
+        # Get the settings for the location
+        settings = locations_settings[location]
 
-    # Dynamically call the appropriate kill function
-    if settings["kill_function"] == "killGame":
-        killGame()
-    elif settings["kill_function"] == "killChaseGame":
-        killChaseGame()
+        # Dynamically call the appropriate kill function
+        if settings["kill_function"] == "killGame":
+            killGame()
+        elif settings["kill_function"] == "killChaseGame":
+            killChaseGame()
 
-    # Perform other actions
-    checkWeight()
-    worldSave()
+        # Perform other actions
+        checkWeight()
+        worldSave()
 
-    # Dynamically call lootGame with the appropriate move_enabled setting
-    lootGame(move_enabled=settings["move_enabled"])
+        # Dynamically call lootGame with the appropriate move_enabled setting
+        lootGame(move_enabled=settings["move_enabled"])
+        if detectMobiles():
+            Misc.SendMessage("Skipping location due to mobile presence", 33)
+            Misc.Pause(1000)
+            continue  # Skip to next location
 
+
+goHome()
     
 if farmRun:
     attempt_recall("Occlo Farm")
-    killChickens()
-    worldSave()
-    Misc.Pause(1000)
-    Player.PathFindTo(3711, 2659, 20)
-    Misc.Pause(2000)
-    Player.PathFindTo(3711, 2662, 20) #north field
-    Misc.Pause(3000)
-    killGame()
-    lootGame(move_enabled=False)
-    worldSave()
-    reapTrash()
-    Player.PathFindTo(3711, 2670, 20) #north field
-    Misc.Pause(6000)
-    reapField()
-    Player.PathFindTo(3711, 2683, 20) #south field
-    Misc.Pause(6000)
-    killChaseGame()
-    worldSave()
-    reapField()
-    Player.PathFindTo(3711, 2683, 20) #south field
-    Misc.Pause(6000)
-    reapTrash()
-    Player.PathFindTo(3710, 2693, 20) #south-south field
-    Misc.Pause(6000)
-    killChaseGame()
-    lootGame(move_enabled=True)
-    worldSave()
-    reapField()
-    checkWeight()
-    Player.PathFindTo(3710, 2693, 20) #south-south field
-    Misc.Pause(6000)
-    reapTrash()
-    worldSave()
-    goHome()
-    attempt_recall("Bulls")
-    Misc.Pause(2500)
-    killChaseGame()
-    checkWeight()
-    worldSave()
-    killChaseGame()
-    lootGame(move_enabled=True)
-    Player.PathFindTo(4469, 1310, 8)
-    Misc.Pause(7000)
-    killChaseGame()
-    checkWeight()
-    worldSave()
-    killChaseGame()
-    lootGame(move_enabled=True)
-    Player.PathFindTo(4456, 1325, 9)
-    Misc.Pause(5000)
-    killChaseGame()
-    checkWeight()
-    worldSave()
-    killChaseGame()
-    lootGame(move_enabled=True)
-    Player.PathFindTo(4467, 1331, 8)
-    Misc.Pause(6000)   
-    killChaseGame()
-    checkWeight()
-    worldSave()
-    killGame()
-    lootGame(move_enabled=True)
-    Player.PathFindTo(4469, 1345, 8)
-    Misc.Pause(7000) 
-    killChaseGame()
-    checkWeight()
-    worldSave()
-    killGame()
-    lootGame(move_enabled=True)
-    Player.PathFindTo(4487, 1333, 8)  
-    Misc.Pause(6000) 
-    killChaseGame()
-    checkWeight()
-    worldSave()
-    killGame()
-    lootGame(move_enabled=True)
-    Player.PathFindTo(4498, 1315, 8)
-    Misc.Pause(6000)  
-    killChaseGame()
-    checkWeight()
-    worldSave()
-    killGame()
-    lootGame(move_enabled=True)
+    if detectMobiles():
+        Misc.SendMessage("There are people here, going home.", 33)
+        Misc.Pause(1000)
+        goHome()
+    else:
+        worldSave()
+        reapTrash()
+        reapField()
+        SafePathFindTo(3711, 2683, 20) #south field
+        Misc.Pause(6000)
+    if detectMobiles():
+        Misc.SendMessage("There are people here, going home.", 33)
+        Misc.Pause(1000)
+        goHome()
+    else:
+        worldSave()
+        reapTrash()
+        reapField()
+        SafePathFindTo(3710, 2693, 20) #south-south field
+        Misc.Pause(6000)
+    if detectMobiles():
+        Misc.SendMessage("There are people here, going home.", 33)
+        Misc.Pause(1000)
+        goHome()
+    else:
+        worldSave()
+        reapTrash()
+        reapField()
+        worldSave()
+        goHome()
+        attempt_recall("Bulls")
+    if detectMobiles():
+        Misc.SendMessage("There are people here, going home.", 33)
+        Misc.Pause(1000)
+        goHome()
+    else:
+        killChaseGame()
+        checkWeight()
+        worldSave()
+        killChaseGame()
+        lootGame(move_enabled=True)
+    if detectMobiles():
+        Misc.SendMessage("There are people here, going home.", 33)
+        Misc.Pause(1000)
+        goHome()
+    else:
+        SafePathFindTo(4469, 1310, 8)
+        Misc.Pause(7000)
+        detectMobiles()
+        killChaseGame()
+        checkWeight()
+        worldSave()
+        killChaseGame()
+        lootGame(move_enabled=True)
+    if detectMobiles():
+        Misc.SendMessage("There are people here, going home.", 33)
+        Misc.Pause(1000)
+        goHome()
+    else:
+        SafePathFindTo(4456, 1325, 9)
+        Misc.Pause(5000)
+        detectMobiles()
+        killChaseGame()
+        checkWeight()
+        worldSave()
+        killChaseGame()
+        lootGame(move_enabled=True)
+    if detectMobiles():
+        Misc.SendMessage("There are people here, going home.", 33)
+        Misc.Pause(1000)
+        goHome()
+    else:
+        SafePathFindTo(4467, 1331, 8)
+        Misc.Pause(6000)   
+        detectMobiles()
+        killChaseGame()
+        checkWeight()
+        worldSave()
+        killGame()
+        lootGame(move_enabled=True)
+    if detectMobiles():
+        Misc.SendMessage("There are people here, going home.", 33)
+        Misc.Pause(1000)
+        goHome()
+    else:
+        SafePathFindTo(4469, 1345, 8)
+        Misc.Pause(7000) 
+        killChaseGame()
+        checkWeight()
+        worldSave()
+        killGame()
+        lootGame(move_enabled=True)
+    if detectMobiles():
+        Misc.SendMessage("There are people here, going home.", 33)
+        Misc.Pause(1000)
+        goHome()
+    else:
+        SafePathFindTo(4487, 1333, 8)  
+        Misc.Pause(6000) 
+        killChaseGame()
+        checkWeight()
+        worldSave()
+        killGame()
+        lootGame(move_enabled=True)
+    if detectMobiles():
+        Misc.SendMessage("There are people here, going home.", 33)
+        Misc.Pause(1000)
+        goHome()
+    else:
+        SafePathFindTo(4498, 1315, 8)
+        Misc.Pause(6000) 
+        detectMobiles() 
+        killChaseGame()
+        checkWeight()
+        worldSave()
+        killGame()
+        lootGame(move_enabled=True)
 
 goHome()
 attempt_recall("Safe Trash")
-Misc.SendMessage("Clicking the trash pile...")  # Debug message
-Items.UseItem(0x400047A6)  # Click the trash pile
-Misc.Pause(1000)          # Brief pause after clicking
-harvestWood()
-barricade()
+if detectMobiles():
+    Misc.SendMessage("There are people here, going home.", 33)
+    Misc.Pause(1000)
+    goHome()
+else:
+    Items.UseItem(0x400047A6)  # Click the trash pile
+    Misc.Pause(1000)          # Brief pause after clicking
+    harvestWood()
+    barricade()
 attempt_recall("Safe Barricade")
-harvestWood()
-goHome()
+if detectMobiles():
+    Misc.SendMessage("There are people here, going home.", 33)
+    Misc.Pause(1000)
+    goHome()
+else:
+    harvestWood()
+    goHome()
 
 Misc.ClearIgnore()
 

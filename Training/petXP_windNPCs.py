@@ -4,6 +4,8 @@ from System import Int32 as int
 import time
 import random
 
+petSerial = 0x00000A14
+
 # Filter to find NPCs (non-player characters)
 npcFilter = Mobiles.Filter()
 npcFilter.Notorieties = List[Byte](bytes([6]))  # Notoriety level 6: NPC
@@ -70,6 +72,7 @@ def killNPCs():
             target_npc = npcList[0]  # Get the first NPC from the list
             Player.Attack(target_npc)  # Attack the NPC
             Misc.Pause(1000)
+            checkAndMoveAway(target_npc, False)
             worldSave()
             healthCheck()
 
@@ -191,7 +194,7 @@ def healthCheck():
         Misc.ScriptStopAll(False)
 
 def crabCheck():
-    crab = Mobiles.FindBySerial(0x0008064C)
+    crab = Mobiles.FindBySerial(petSerial)
     
     # Start the timer
     start_time = time.time()
@@ -207,6 +210,39 @@ def crabCheck():
         Player.ChatSay("All follow me")
         Misc.Pause(2000)        
             
+def checkAndMoveAway(mob, can_ignore=False):
+    if mob is None or mob.Position is None:
+        return True  # No valid mob, treat as success
+
+    if Player.DistanceTo(mob) < 2:
+        Misc.SendMessage("Too close for comfort", 53)
+        Misc.Pause(500)
+
+        retry_attempts = 10
+        directions = ["North", "Northeast", "East", "Southeast", 
+                      "South", "Southwest", "West", "Northwest"]
+
+        while Player.DistanceTo(mob) < 2 and retry_attempts > 0:
+            random_direction = random.choice(directions)
+            for _ in range(3):
+                Player.Walk(random_direction)
+                Misc.Pause(500)
+            Misc.Pause(1000)
+            retry_attempts -= 1
+
+        # Final check
+        if Player.DistanceTo(mob) >= 2:
+            return True
+
+        if can_ignore:
+            Misc.SendMessage(f"Couldnt create distance from {mob.Name}, ignoring.", 33)
+            Misc.Pause(500)
+            Misc.IgnoreObject(mob)
+            Misc.Pause(350)
+            return False
+
+    return True  # Already at a safe distance
+
         
 # List of possible locations
 locations = ["Seat of Knowledge", "The Learned Mage", "Windy Inn", "Magical Supplies", "Mage's Things", "Windy Clothes", "Seeker's Inn", "Seeker's Inn 2", "Wind Alchemy", "Wind Alchemy 2"]

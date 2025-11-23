@@ -2,8 +2,8 @@ from System.Collections.Generic import List
 from System import Byte
 from System import Int32 as int
 import time
-import keyboard
 import datetime
+import random
 
 
 #KILL 
@@ -56,6 +56,56 @@ MAX_RETRY = 5
 RANGE_MAX = 10
 ITEM_ID_SKILL = "Item ID"
 
+def waitForRightOfWay(max_attempts=10):
+    priority_order = ["Realtree", "Alyer Base", "Tool Time", "ToolmanTailor", "ImaTool"]
+    me = Player.Name
+    my_priority = priority_order.index(me)
+
+    excluded_coords = [(6804, 3897), (6800, 3898), (6800, 3892), (6805, 3892), (6803, 3892)]
+
+    attempt = 0
+    while attempt < max_attempts:
+        blocking = False
+        
+        mobilesFilter = Mobiles.Filter()
+        mobilesFilter.IsHuman = True
+        allNearby = Mobiles.ApplyFilter(mobilesFilter)
+        
+
+        for mob in allNearby:
+            if not mob or not mob.Name or mob.Serial == Player.Serial:
+                continue
+
+            if (mob.Position.X, mob.Position.Y) in excluded_coords:
+                continue  # Ignore characters in known resting spots
+
+            if mob.Name in priority_order:
+                their_priority = priority_order.index(mob.Name)
+                if their_priority < my_priority:
+                    Player.HeadMessage(34, f"Waiting for {mob.Name} to go first.")
+                    Misc.Pause(500)
+                    blocking = True
+                    break
+
+        if not blocking:
+            Player.HeadMessage(55, "Clear to go home.")
+            Misc.Pause(500)
+            return True
+
+        wait_time = random.randint(10000, 20000)
+        seconds = wait_time // 1000
+
+        for i in range(seconds, 0, -1):
+            Player.HeadMessage(34, f"Waiting... {i}s")
+            Misc.Pause(1000)
+
+        attempt += 1
+
+    Player.HeadMessage(33, "Too crowded. Giving up.")
+    return False
+
+
+
 def log_gold_amount():
     """
     Gets the current gold count in the backpack and appends it to the log file with a timestamp.
@@ -69,36 +119,36 @@ def log_gold_amount():
     Misc.SendMessage(f"Logged: {timestamp} - Gold: {gold_amount}", 53)
     
 def transferGold():
+    # Calculate remaining weight capacity with a 10-stone buffer
+    weight_capacity = (Player.MaxWeight - 10) - Player.Weight
+    # Make sure its not negative
+    if weight_capacity < 0:
+        weight_capacity = 0
+    # Gold weighs 1 stone per 50gp (rounded up), so we must round down to nearest full stone
+    # Each stone can hold 50gp safely
+    gold_capacity = int(weight_capacity)  # round down to whole stones
+    gold_transfer = gold_capacity * 50    # each stone holds 50gp
+
+    
     Items.UseItem(0x42E87E92)
     Misc.Pause(500)
-    if Items.ContainerCount(0x42E87E92,0x0EED,-1) >50000:
+    if Items.ContainerCount(0x42E87E92,0x0EED,-1) > 10000:
         gold = Items.FindByID(0x0EED,-1,0x42E87E92)
         if gold:
-            Items.MoveOnGround(gold,50000,6802, 3898, 17)
+            Items.Move(gold,Player.Backpack.Serial,gold_transfer)
             Misc.Pause(1000)
-            Misc.SendMessage("Moving")
+            attempt_recall("bank cellar")
+            Player.ChatSay("Bank")
             Misc.Pause(500)
-            Player.PathFindTo(6802, 3899, 17)
-            Misc.Pause(1500)
-            door = Items.FindBySerial(0x42F89EBF)
-            if door.ItemID == 0x0675:
-                Items.UseItem(door)
-                Misc.Pause(500)
-            Player.PathFindTo(6802, 3900, 17)
-            Misc.Pause(750)
-            gold = Items.FindByID(0x0EED,0x0000,-1,2)
-            Items.MoveOnGround(gold,50000,6802, 3901, 12)
-            Misc.Pause(1000)
-            Player.PathFindTo(6802, 3901, 12)
-            Misc.Pause(750)
-            Items.Move(gold,0x002C21FF,50000)
-            Misc.Pause(1000)
-            if door.ItemID == 0x0675:
-                Items.UseItem(door)
-                Misc.Pause(500)
-            Player.PathFindTo(6803, 3898, 17)
-            Misc.Pause(1500)
-
+            gold = Items.FindByID(0x0EED,0x0000,Player.Backpack.Serial)
+            while gold:
+                Items.Move(gold, Player.Bank.Serial,-1)
+                Misc.Pause(1000)
+                gold = Items.FindByID(0x0EED,0x0000,Player.Backpack.Serial)
+            Player.ChatSay("Deposit")
+            Misc.Pause(500)
+            goHome()
+            
 def countItemsByID(itemIDs):
     """
     Counts the total number of specified items by their IDs in the players backpack.
@@ -122,27 +172,6 @@ def countItemsByID(itemIDs):
 
     # Return the total count of items
     return totalCount
-
-def checkATM():
-    Mobiles.UseMobile(0x002C21FF)
-    Misc.Pause(500)
-    line = Gumps.LastGumpGetLine(12)
-    line = line.replace(',', '')  # Remove commas from the string
-    line = int(line)  # Now this should work without error
-
-    if line > 500000:
-        Misc.Pause(500) #clear speech line
-        keyboard.press('return')
-        keyboard.release('return')
-        Misc.Pause(500)
-        Misc.Pause(500)
-        Gumps.SendAction(474654352, 6)
-        Misc.Pause(1000)
-        Misc.SendToClient("500000")
-        Misc.Pause(500)
-        keyboard.press('return')
-        keyboard.release('return')
-        Misc.Pause(500)
 
 
 def weightCheck():
@@ -202,18 +231,18 @@ def deadCheck():
     
 def goHome():
     attempt_recall("Winter Lodge")
-    Misc.Pause(3000)
-    log_gold_amount()
-    gold = Items.FindByID(0x0EED,-1,Player.Backpack.Serial)
-    if gold:
-        Items.Move(gold,0x002C21FF,-1)
-        Misc.Pause(1000)
-    checkATM()
     Misc.Pause(500)
+    waitForRightOfWay()
     Player.PathFindTo(6802,3901,12)
-    Misc.Pause(2000)
+    Misc.Pause(1500)
+    waitForRightOfWay()
+    door = Items.FindBySerial(0x42F89EDC)
+    if door.ItemID == 0x0677:
+        Items.UseItem(door)
+        Misc.Pause(500)
     Player.PathFindTo(6803,3899,17)
     Misc.Pause(2000)
+    waitForRightOfWay()
 
 def takeSeat():
     Player.PathFindTo(6805,3892,17)
@@ -387,6 +416,7 @@ def pickChest(item):
 
                 if lockpick is None:
                     Player.HeadMessage(colors['red'], 'Ran out of lockpicks!')
+                    Misc.Pause(300)
                     return False
             else:
                 Player.HeadMessage(64, "Where did the chest go?")
@@ -522,6 +552,7 @@ def moveToChest(chest):
         return
     chestPosition = chest.Position
     Misc.SendMessage("Original chest position: {}".format(chestPosition))
+    Misc.Pause(300)
 
     directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # Directions to try: Down, Up, Right, Left
     for dx, dy in directions:
@@ -537,6 +568,7 @@ def moveToChest(chest):
             currentTime = time.time()
             if currentTime - startTime > TIMEOUT:
                 Misc.SendMessage("Timed out, trying next position")
+                Misc.Pause(300)
                 break
             Misc.Pause(500)
         
@@ -675,6 +707,7 @@ def moveToOriginalPosition(originalPosition):
     danger = mobCheck()  # Assuming mobCheck() is a function that checks for danger
     if danger:
         Misc.SendMessage("Danger detected, cannot move to original position.")
+        Misc.Pause(500)
         return
     if Player.Position != originalPosition:
         targetCoords = PathFinding.Route()
@@ -689,6 +722,7 @@ def moveToOriginalPosition(originalPosition):
             currentTime = time.time()
             if currentTime - startTime > TIMEOUT:  # Ensure TIMEOUT is defined somewhere in your script
                 Misc.SendMessage("Timed out, trying next position")
+                Misc.Pause(300)
                 break
             Misc.Pause(500)
     

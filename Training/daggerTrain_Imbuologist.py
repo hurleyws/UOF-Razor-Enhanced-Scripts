@@ -15,7 +15,7 @@ slayerProps = ['Silver']
 ######################### Do not touch anything below here################
 
 keepSlayers = False
-colors = True
+colors = False
 color = 13 #20 = shadow 13=dullcopper
 
 def slayerCheck():

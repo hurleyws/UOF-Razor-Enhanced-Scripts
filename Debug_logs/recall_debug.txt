@@ -1,0 +1,9 @@
+[2025-07-28 14:54:35] Position: (561, 932, 0) | Note: Minimal recall test: start
+[2025-07-28 14:54:35] Position: (561, 932, 0) | Note: Recall command sent
+[2025-07-28 14:54:40] Position: (561, 932, 0) | Note: Recall complete
+[2025-07-28 14:54:55] Position: (552, 941, 0) | Note: Minimal recall test: start
+[2025-07-28 14:54:55] Position: (552, 941, 0) | Note: Recall command sent
+[2025-07-28 14:55:00] Position: (561, 932, 0) | Note: Recall complete
+[2025-07-28 14:57:03] Position: (561, 932, 0) | Note: Minimal recall test: start
+[2025-07-28 14:57:03] Position: (561, 932, 0) | Note: Recall command sent
+[2025-07-28 14:57:08] Position: (561, 932, 0) | Note: Recall complete

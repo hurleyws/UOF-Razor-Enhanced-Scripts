@@ -4,43 +4,85 @@ from System.Collections.Generic import List
 from System import Int32 as int
 from System import Byte
 
-def checkPositionAndMobiles(expectedX, expectedY, maxWait=10000):
-    """
-    Check if the player is at the expected position and ensure no mobiles are within 3 tiles.
-    If not, wait up to `maxWait` milliseconds and retry the `goHome()` function if needed.
+import random
 
-    :param expectedX: Expected X coordinate of the player.
-    :param expectedY: Expected Y coordinate of the player.
-    :param maxWait: Maximum wait time in milliseconds for lag to clear or mobiles to leave.
-    """
-    Misc.SendMessage(f"Checking position: Expected ({expectedX}, {expectedY}), Current ({Player.Position.X}, {Player.Position.Y})", 77)
-    Misc.Pause(500)
-    
-    elapsedTime = 0
-    retryInterval = 1000  # Check every 500 ms
 
-    while elapsedTime < maxWait:
-        # Check if the player is in the correct position
-        if Player.Position.X == expectedX and Player.Position.Y == expectedY:
-            # Filter for mobiles within 3 tiles
-            mobilesFilter = Mobiles.Filter()
-            mobilesFilter.RangeMax = 2
-            mobilesFilter.Notorieties = List[Byte](bytes([1,2,3,4]))
+def waitForRightOfWay(max_attempts=10):
+    priority_order = ["Realtree", "Alyer Base", "Tool Time", "ToolmanTailor", "ImaTool"]
+    me = Player.Name
+    my_priority = priority_order.index(me)
 
-            nearbyMobiles = Mobiles.ApplyFilter(mobilesFilter)
+    excluded_coords = [(6804, 3897), (6800, 3898), (6800, 3892), (6805, 3892), (6803, 3892)]
 
-            if len(nearbyMobiles) == 0:
-                Misc.SendMessage("Pass: Player is in the correct position and no mobiles are nearby.", 77)
-                return  # Exit the function when in the correct position and no mobiles are nearby
-            else:
-                Misc.SendMessage(f"Waiting for mobiles to leave: {len(nearbyMobiles)} detected.", 33)
+    attempt = 0
+    while attempt < max_attempts:
+        blocking = False
         
-        Misc.Pause(retryInterval)
-        elapsedTime += retryInterval
-    
-    # If the player is still not at the correct position or mobiles are still present, retry goHome()
-    Misc.SendMessage("Fail: Conditions not met. Retrying goHome().", 33)
-    goHome()  # Retry the goHome function
+        mobilesFilter = Mobiles.Filter()
+        mobilesFilter.IsHuman = True
+        allNearby = Mobiles.ApplyFilter(mobilesFilter)
+        
+
+        for mob in allNearby:
+            if not mob or not mob.Name or mob.Serial == Player.Serial:
+                continue
+
+            if (mob.Position.X, mob.Position.Y) in excluded_coords:
+                continue  # Ignore characters in known resting spots
+
+            if mob.Name in priority_order:
+                their_priority = priority_order.index(mob.Name)
+                if their_priority < my_priority:
+                    Player.HeadMessage(34, f"Waiting for {mob.Name} to go first.")
+                    Misc.Pause(500)
+                    blocking = True
+                    break
+
+        if not blocking:
+            Player.HeadMessage(55, "Clear to go home.")
+            Misc.Pause(500)
+            return True
+
+        wait_time = random.randint(10000, 20000)
+        seconds = wait_time // 1000
+
+        for i in range(seconds, 0, -1):
+            Player.HeadMessage(34, f"Waiting... {i}s")
+            Misc.Pause(1000)
+
+        attempt += 1
+
+    Player.HeadMessage(33, "Too crowded. Giving up.")
+    return False
+
+def checkPlayerAtPosition(target_x, target_y, target_z):
+    attempts = 0
+    max_attempts = 3
+
+    while attempts < max_attempts:
+        current_pos = Player.Position
+        if (current_pos.X == target_x and 
+            current_pos.Y == target_y and 
+            current_pos.Z == target_z):
+            return  # Already at target
+
+        Player.HeadMessage(55, f"Attempt {attempts + 1}: Moving to target location...")
+        Misc.Pause(1000)
+        Player.PathFindTo(target_x, target_y, target_z)
+        Misc.Pause(3000)  # Wait for movement (you can adjust based on expected travel time)
+
+        current_pos = Player.Position
+        if (current_pos.X == target_x and 
+            current_pos.Y == target_y and 
+            current_pos.Z == target_z):
+            Player.HeadMessage(65, "Arrived at target location.")
+            Misc.Pause(1000)
+            return  # Success
+
+        attempts += 1
+
+    Player.HeadMessage(33, "Failed to reach the target location after 3 attempts.")
+    Misc.Pause(1000)
 
 
 def unloadResources():
@@ -190,7 +232,7 @@ def repairCheck():
             Misc.Pause(500)
 
             # Find all daggers in the repair pouch
-            dagger_candidates = Items.FindItemsByID(0x0F52, -1, repairPouch.Serial)
+            dagger_candidates = Items.FindAllByID(0x0F52, -1, repairPouch.Serial,2)
 
             silver_dagger = None
             for dagger in dagger_candidates:
@@ -203,7 +245,7 @@ def repairCheck():
                 Items.Move(silver_dagger, Player.Backpack.Serial, 1)
                 Misc.Pause(1000)
 
-                # Confirm it's in the backpack
+                # Confirm its in the backpack
                 dagger = Items.FindBySerial(silver_dagger.Serial)
                 if dagger:
                     Misc.Pause(200)
@@ -338,17 +380,21 @@ def bod_run():
         Misc.Pause(1000)
     Player.ChatSay(64,'[recall Winter Lodge')
     Misc.Pause(3000)
+    waitForRightOfWay()
     trashCheck()
     Player.PathFindTo(6802, 3901, 12)
-    Misc.Pause(1500)
+    Misc.Pause(2000)
+    checkPlayerAtPosition(6802, 3901, 12)
+    waitForRightOfWay()
     door = Items.FindBySerial(0x42F89EDC)
-    if door.ItemID == 0x0677:
+    if door and door.ItemID == 0x0677:
         Items.UseItem(door)
         Misc.Pause(500)
     Player.PathFindTo(6802, 3900, 17)
-    Misc.Pause(1500)      
+    Misc.Pause(2000)  
+    checkPlayerAtPosition(6802, 3900, 17)   
     Items.UseItem(0x42E88440) #Open box by door
-    Misc.Pause(1000)
+    Misc.Pause(1500)
     stockRegs()
     for i in Player.Backpack.Contains: #Sort/store tailor BODS
         if i.ItemID == 0x14EF and i.Hue == 1155:
@@ -385,12 +431,16 @@ def bod_run():
         Player.Run("North")
         Misc.Pause(500)
     elif Player.Name == 'Tool Time':
+        Player.PathFindTo(6802, 3892, 17)
+        Misc.Pause(4000)
         Player.PathFindTo(6800, 3892, 17)
-        Misc.Pause(5000)
+        Misc.Pause(1000)
         Player.Run("North")
     elif Player.Name == 'ImaTool':
         Player.PathFindTo(6805, 3892, 17)
-        Misc.Pause(5000)
+        Misc.Pause(4000)
+        Player.PathFindTo(6805, 3892, 17)
+        Misc.Pause(500)
         Player.Run("North")          
             
     Player.ChatSay(64, 'Bod run complete')
@@ -411,16 +461,17 @@ def bod_run():
         mstring = mstring[1]
         min = int(mstring)
         sleepTime = (hour*60) + min + 2
+        sleep_seconds = sleepTime * 60
         Misc.Pause(500)
         Player.ChatSay(64,"I was too early. Will return in " + str(hour) + " hours and " + str(min) + " minutes.")
         Misc.Pause(1000)
         if Player.Name == 'ToolmanTailor':
-            for x in range(hour):
-                Player.ChatSay("I have more than an hour to wait, making a farm run.")
-                Misc.Pause(1000)
-                Misc.ScriptRun("FarmGod.py")
-                time.sleep(60*60)
-            time.sleep(60*min)
+            start_time = time.time()
+            while time.time() - start_time < sleep_seconds:
+                if not Misc.ScriptStatus("npc_Escorts.py"):
+                    Misc.ScriptRun("npc_Escorts.py")
+                    Misc.Pause(1000)
+                Misc.Pause(5000)  # 10 seconds before checking again
             Journal.Clear()
         elif Player.Name == "ImaTool":
             Player.ChatSay("I will make "+str(hour)+" treasure runs in the meantime.")
@@ -463,10 +514,12 @@ while True:
         time.sleep(5*60*60)
 
     elif Player.Name == 'ToolmanTailor':
-        Misc.Pause(2000)
-        for x in range(5):
-            Misc.ScriptRun("FarmGod.py")
-            time.sleep(60*60) 
+        start_time = time.time()
+        while time.time() - start_time < 5 * 60 * 60:
+            if not Misc.ScriptStatus("npc_Escorts.py"):
+                Misc.ScriptRun("npc_Escorts.py")
+                Misc.Pause(1000)
+            Misc.Pause(5000)  # 10 seconds before checking again
             
     elif Player.Name == 'ImaTool':
         Misc.Pause(5000)

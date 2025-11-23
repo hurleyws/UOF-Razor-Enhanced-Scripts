@@ -14,7 +14,7 @@ while Player.Weight > 350:
         Misc.ContextReply(0x001523D4, 10)
         Misc.Pause(500)
         for i in Player.Backpack.Contains:
-            if i in loot:
+            if i.ItemID in loot:
                 Items.Move(i,beetle_backpack_serial, -1)
         try:
             Items.Move(gold, beetle_backpack_serial,Player.Gold-1)
